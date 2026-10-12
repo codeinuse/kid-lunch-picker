@@ -24,6 +24,34 @@ interface SpoonacularResult {
   image: string;
 }
 
+/** Keywords used to screen live API titles for avoided allergens. */
+const ALLERGEN_KEYWORDS: Record<Allergen, string[]> = {
+  milk: ["milk", "cheese", "cheddar", "mozzarella", "yogurt", "cream", "butter", "whey", "latte", "cappuccino"],
+  eggs: ["egg"],
+  fish: ["fish", "tuna", "salmon", "cod"],
+  shellfish: ["shrimp", "crab", "lobster", "clam"],
+  tree_nuts: ["almond", "walnut", "cashew", "pecan", "pistachio", "hazelnut"],
+  peanuts: ["peanut"],
+  wheat: ["wheat", "bread", "bun", "pizza", "pasta", "flour", "cookie", "sandwich", "tortilla", "bagel", "crust"],
+  soy: ["soy", "tofu"],
+  sesame: ["sesame"],
+};
+
+/** Drop live items whose title mentions an avoided allergen. */
+function containsAvoidedAllergen(title: string, avoids: Allergen[]): boolean {
+  const t = title.toLowerCase();
+  return avoids.some((a) => ALLERGEN_KEYWORDS[a].some((k) => t.includes(k)));
+}
+
+/** Clean a menu-item title into a short kid-friendly name. */
+function cleanName(title: string): string {
+  const base = title.split("(")[0].split(",")[0].trim();
+  if (base.length <= 24) return base;
+  const cut = base.slice(0, 24);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
 /** Map a Spoonacular menu-item title to our category (best effort). */
 function matchesCategory(title: string, category: FoodCategory): boolean {
   const t = title.toLowerCase();
@@ -78,10 +106,11 @@ export async function GET(req: NextRequest) {
     const data = (await res.json()) as { menuItems?: SpoonacularResult[] };
     const live: FoodItem[] = (data.menuItems ?? [])
       .filter((m) => matchesCategory(m.title, category))
+      .filter((m) => !containsAvoidedAllergen(m.title, avoids))
       .slice(0, 8)
       .map((m) => ({
         id: `sp-${m.id}`,
-        name: m.title.split(",")[0].slice(0, 24),
+        name: cleanName(m.title),
         emoji: "🍱",
         imageUrl: m.image,
         category,
