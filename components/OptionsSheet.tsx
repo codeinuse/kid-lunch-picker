@@ -23,12 +23,23 @@ export function OptionsSheet({ item, onClose }: Props) {
 
   const groups = item ? optionsFor(item.id, item.category) : [];
 
+  const existing = useTrayStore((s) =>
+    item ? s.picks[item.category] : null,
+  );
+
   useEffect(() => {
     if (item) {
-      setOptions(defaultOptions(optionsFor(item.id, item.category)));
+      // Start from the current pick (just added with defaults) so
+      // reopening the sheet never wipes the kid's tweaks.
+      setOptions(
+        existing?.item.id === item.id && existing.options
+          ? existing.options
+          : defaultOptions(optionsFor(item.id, item.category)),
+      );
       setImgOk(true);
       speak(item.name);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item]);
 
   return (

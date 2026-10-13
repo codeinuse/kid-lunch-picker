@@ -1,0 +1,9 @@
+
+> kid-lunch-picker@0.1.0 start
+> next start -H 0.0.0.0 -p 3000
+
+▲ Next.js 16.4.0
+- Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+✓ Ready in 119ms
+✓ Running next.config.ts took 542ms

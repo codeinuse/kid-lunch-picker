@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
+import { defaultOptions, optionsFor } from "@/lib/options";
 import { useMounted, useTrayStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
@@ -23,6 +24,23 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
   const mounted = useMounted();
   const avoids = useTrayStore((s) => s.avoids);
   const picks = useTrayStore((s) => s.picks);
+  const setPick = useTrayStore((s) => s.setPick);
+
+  /**
+   * Tap = added immediately with default options, sheet opens for tweaks.
+   * Closing the sheet without changes keeps the pick — a tap never
+   * results in "nothing added".
+   */
+  const handlePick = (item: FoodItem) => {
+    const current = picks[category];
+    setPick(
+      category,
+      current?.item.id === item.id
+        ? current
+        : { item, options: defaultOptions(optionsFor(item.id, item.category)) },
+    );
+    setPending(item);
+  };
   const [pending, setPending] = useState<FoodItem | null>(null);
 
   const { data, isLoading, isError } = useQuery({
@@ -86,7 +104,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
               key={item.id}
               item={item}
               selected={mounted && picks[category]?.item.id === item.id}
-              onPick={setPending}
+              onPick={handlePick}
             />
           ))}
         </div>
