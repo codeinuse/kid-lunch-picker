@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Lottie } from "lottie-react";
 import { useActiveKid, useLunchStore } from "@/lib/store";
+import { ConfettiExplosion } from "@/components/ConfettiExplosion";
 import { speak } from "@/lib/speak";
 import { useFanfareSound, useTapSound } from "@/lib/sounds";
 import { CheererMascot, GuideMascot } from "@/components/Mascot";
@@ -52,13 +52,7 @@ export function Celebration() {
           animate={{ scale: 1, opacity: 1 }}
           className="sticker relative mt-2 overflow-hidden p-4 text-center"
         >
-          <Lottie
-            src="/lottie/confetti.json"
-            autoplay
-            loop={false}
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-40 w-full"
-          />
+          <ConfettiExplosion />
           {themeId === "classic" ? (
             <CheererMascot className="relative mx-auto h-36 w-auto" />
           ) : (
