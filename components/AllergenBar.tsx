@@ -1,7 +1,7 @@
 "use client";
 
 import type { Allergen } from "@/lib/types";
-import { useTrayStore } from "@/lib/store";
+import { useMounted, useTrayStore } from "@/lib/store";
 
 const BIG9: { id: Allergen; label: string; emoji: string }[] = [
   { id: "milk", label: "Milk", emoji: "🥛" },
@@ -17,7 +17,11 @@ const BIG9: { id: Allergen; label: string; emoji: string }[] = [
 
 /** Parent-controlled avoid list. Toggled items are hidden from the kid. */
 export function AllergenBar() {
-  const { avoids, toggleAvoid } = useTrayStore();
+  // Server-identical empty avoids until mounted (see Celebration).
+  const mounted = useMounted();
+  const storeAvoids = useTrayStore((s) => s.avoids);
+  const toggleAvoid = useTrayStore((s) => s.toggleAvoid);
+  const avoids = mounted ? storeAvoids : [];
   return (
     <section aria-label="Foods to avoid" className="w-full">
       <p className="mb-2 text-center text-sm font-bold text-stone-500">

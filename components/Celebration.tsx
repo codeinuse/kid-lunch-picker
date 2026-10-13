@@ -1,14 +1,18 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useTrayStore } from "@/lib/store";
+import { useMounted, useTrayStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
 import { useEffect, useRef } from "react";
 
 /** Progress bar + celebration when the tray is complete. */
 export function Celebration() {
-  const filled = useTrayStore((s) => s.filledCount());
+  // Render the server-identical empty state until mounted (persisted
+  // picks would otherwise mismatch the SSR HTML → hydration error).
+  const mounted = useMounted();
+  const filledCount = useTrayStore((s) => s.filledCount);
   const total = useTrayStore((s) => s.totalSlots);
+  const filled = mounted ? filledCount() : 0;
   const clearTray = useTrayStore((s) => s.clearTray);
   const announced = useRef(false);
   const complete = filled === total;

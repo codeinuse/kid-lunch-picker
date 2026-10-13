@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
@@ -22,13 +23,26 @@ interface TrayState {
   totalSlots: number;
 }
 
-const emptyTray = (): TraySelection =>
+export const emptyTraySelection = (): TraySelection =>
   Object.fromEntries(CATEGORIES.map((c) => [c.id, null])) as TraySelection;
+
+/**
+ * False during SSR and the first client render, true afterwards.
+ * Gate persisted-store reads on this so the first client render
+ * is identical to the server HTML (no hydration mismatch).
+ */
+export function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  return mounted;
+}
 
 export const useTrayStore = create<TrayState>()(
   persist(
     (set, get) => ({
-      picks: emptyTray(),
+      picks: emptyTraySelection(),
       avoids: [],
       setPick: (category, pick) =>
         set((s) => ({ picks: { ...s.picks, [category]: pick } })),
@@ -38,7 +52,7 @@ export const useTrayStore = create<TrayState>()(
             ? s.avoids.filter((a) => a !== allergen)
             : [...s.avoids, allergen],
         })),
-      clearTray: () => set({ picks: emptyTray() }),
+      clearTray: () => set({ picks: emptyTraySelection() }),
       filledCount: () =>
         Object.values(get().picks).filter((p) => p !== null).length,
       totalSlots: CATEGORIES.length,
@@ -48,7 +62,7 @@ export const useTrayStore = create<TrayState>()(
       version: 1,
       migrate: (persisted: unknown) => {
         const state = persisted as { picks?: Record<string, unknown>; avoids?: Allergen[] };
-        const picks = emptyTray();
+        const picks = emptyTraySelection();
         for (const cat of CATEGORIES.map((c) => c.id)) {
           const old = state.picks?.[cat] as { item?: FoodItem; id?: string } | null;
           if (old && typeof old === "object") {

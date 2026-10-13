@@ -4,11 +4,14 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CATEGORIES } from "@/lib/categories";
 import { optionsFor, summarizeOptions } from "@/lib/options";
-import { useTrayStore } from "@/lib/store";
+import { emptyTraySelection, useMounted, useTrayStore } from "@/lib/store";
 
 /** The lunch tray: 6 slots, one per category. Tap a slot to browse it. */
 export function TrayGrid() {
-  const picks = useTrayStore((s) => s.picks);
+  // Server-identical empty tray until mounted (see Celebration).
+  const mounted = useMounted();
+  const storePicks = useTrayStore((s) => s.picks);
+  const picks = mounted ? storePicks : emptyTraySelection();
   return (
     <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3" role="list">
       {CATEGORIES.map((cat) => {

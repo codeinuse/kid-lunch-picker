@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
-import { useTrayStore } from "@/lib/store";
+import { useMounted, useTrayStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
 
@@ -20,6 +20,7 @@ async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]
 
 export function BrowseGrid({ category }: { category: FoodCategory }) {
   const info = categoryInfo(category);
+  const mounted = useMounted();
   const avoids = useTrayStore((s) => s.avoids);
   const picks = useTrayStore((s) => s.picks);
   const [pending, setPending] = useState<FoodItem | null>(null);
@@ -84,7 +85,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
             <FoodCard
               key={item.id}
               item={item}
-              selected={picks[category]?.item.id === item.id}
+              selected={mounted && picks[category]?.item.id === item.id}
               onPick={setPending}
             />
           ))}
