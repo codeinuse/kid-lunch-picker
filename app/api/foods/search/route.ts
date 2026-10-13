@@ -154,7 +154,8 @@ export async function GET(req: NextRequest) {
     const menuItems = searches.flat();
     // Match + dedupe on the cleaned name (raw titles carry side-dish
     // parentheticals like "Salmon (Broccoli)" that pollute matching).
-    const seen = new Set<string>();
+    // Seed with curated names so live results can't shadow them.
+    const seen = new Set<string>(local.map((f) => f.name.toLowerCase()));
     const live: FoodItem[] = [];
     for (const m of menuItems) {
       const name = cleanName(m.title);
