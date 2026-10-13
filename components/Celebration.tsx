@@ -54,13 +54,22 @@ export function Celebration() {
           <p className="mt-1 text-xl font-black text-stone-800">
             Leo the Lion loves your lunch!
           </p>
-          <button
-            type="button"
-            onClick={clearTray}
-            className="mt-2 min-h-12 rounded-full bg-orange-500 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
-          >
-            Start Over 🔄
-          </button>
+          <div className="mt-2 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className="min-h-12 rounded-full bg-sky-500 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+            >
+              Print My Lunch! 🖨️
+            </button>
+            <button
+              type="button"
+              onClick={clearTray}
+              className="min-h-12 rounded-full bg-orange-500 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+            >
+              Start Over 🔄
+            </button>
+          </div>
         </motion.div>
       )}
     </div>

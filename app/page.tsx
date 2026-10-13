@@ -1,9 +1,11 @@
 import { TrayGrid } from "@/components/TrayGrid";
 import { Celebration } from "@/components/Celebration";
 import { AllergenBar } from "@/components/AllergenBar";
+import { PrintSummary } from "@/components/PrintSummary";
 
 export default function Home() {
   return (
+    <>
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-5 px-4 py-6">
       <header className="text-center">
         <p className="text-6xl" aria-hidden>
@@ -27,5 +29,7 @@ export default function Home() {
         Made with 💛 for lunch packers
       </footer>
     </main>
+    <PrintSummary />
+    </>
   );
 }

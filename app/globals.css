@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Printing the lunch order: only #print-summary reaches the paper/PDF. */
+@media print {
+  body {
+    background: #fff;
+  }
+  body > main,
+  body main {
+    display: none !important;
+  }
+  #print-summary {
+    display: block !important;
+    color: #000;
+  }
+}
