@@ -5,12 +5,12 @@ import { Lottie } from "lottie-react";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
 import { useFanfareSound, useTapSound } from "@/lib/sounds";
-import { CheererMascot } from "@/components/Mascot";
+import { CheererMascot, GuideMascot } from "@/components/Mascot";
 import { useEffect, useRef } from "react";
 
 /** Progress bar + celebration when the tray is complete. */
 export function Celebration() {
-  const { filled } = useActiveKid();
+  const { filled, themeId, theme } = useActiveKid();
   const total = useLunchStore((s) => s.totalSlots);
   const clearTray = useLunchStore((s) => s.clearTray);
   const fanfare = useFanfareSound();
@@ -22,10 +22,10 @@ export function Celebration() {
     if (complete && !announced.current) {
       announced.current = true;
       fanfare();
-      speak("All done! Great lunch!");
+      speak(theme.completeLine);
     }
     if (!complete) announced.current = false;
-  }, [complete, fanfare]);
+  }, [complete, fanfare, theme]);
 
   return (
     <div className="w-full">
@@ -44,7 +44,7 @@ export function Celebration() {
         />
       </div>
       <p className="mt-1 text-center font-display text-2xl font-semibold text-stone-700">
-        {complete ? "🎉 All done! Great lunch! 🎉" : `You picked ${filled} of ${total}!`}
+        {complete ? `🎉 ${theme.completeLine} 🎉` : `You picked ${filled} of ${total}!`}
       </p>
       {complete && (
         <motion.div
@@ -59,9 +59,13 @@ export function Celebration() {
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-40 w-full"
           />
-          <CheererMascot className="relative mx-auto h-36 w-auto" />
+          {themeId === "classic" ? (
+            <CheererMascot className="relative mx-auto h-36 w-auto" />
+          ) : (
+            <GuideMascot kind={themeId} className="relative mx-auto h-36 w-auto" />
+          )}
           <p className="relative mt-1 font-display text-2xl font-semibold text-stone-800">
-            Leo loves your lunch!
+            {themeId === "classic" ? "Leo loves your lunch!" : `${theme.name} crew loves your lunch!`}
           </p>
           <div className="relative mt-3 flex flex-col gap-2">
             <button

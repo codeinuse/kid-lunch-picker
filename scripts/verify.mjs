@@ -68,12 +68,12 @@ try {
   const home = await get("/");
   home.status === 200 ? ok("GET / → 200") : bad("GET / → 200", `got ${home.status}`);
   const html = await home.text();
-  html.includes("Build Your Lunch")
-    ? ok("home shows tray title")
-    : bad("home shows tray title");
-  html.includes('id="print-summary"')
-    ? ok("home includes print summary")
-    : bad("home includes print summary");
+  // The login screen renders client-side after mount (persisted profiles
+  // live in localStorage), so plain HTTP only ever sees the loading shell.
+  // Tray/print content post-sign-in is covered by screenshots, not here.
+  html.includes('aria-label="Loading"')
+    ? ok("home serves loading shell (login hydrates client-side)")
+    : bad("home serves loading shell (login hydrates client-side)");
 } catch (e) {
   bad("home page reachable", `${e.cause?.code ?? e.message} (is the dev server running?)`);
   console.log(`\n${fail} failed, ${pass} passed. Start the app first: npm run dev`);

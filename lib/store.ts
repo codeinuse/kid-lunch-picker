@@ -11,6 +11,7 @@ import type {
   TraySelection,
 } from "./types";
 import { CATEGORIES } from "./categories";
+import { THEMES, themePack, type ThemeId } from "./themes";
 
 export interface KidProfile {
   id: string;
@@ -18,6 +19,7 @@ export interface KidProfile {
   avatar: string;
   /** 4-digit device PIN (kept on this device only). */
   pin: string;
+  theme: ThemeId;
 }
 
 export interface TrayData {
@@ -30,9 +32,10 @@ interface LunchState {
   activeId: string | null;
   trays: Record<string, TrayData>;
   totalSlots: number;
-  createProfile: (name: string, avatar: string, pin: string) => string;
+  createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId) => string;
   selectProfile: (id: string) => void;
   logout: () => void;
+  setTheme: (theme: ThemeId) => void;
   setPick: (category: FoodCategory, pick: PickedFood | null) => void;
   toggleAvoid: (allergen: Allergen) => void;
   clearTray: () => void;
@@ -54,10 +57,10 @@ export const useLunchStore = create<LunchState>()(
       activeId: null,
       trays: {},
       totalSlots: CATEGORIES.length,
-      createProfile: (name, avatar, pin) => {
+      createProfile: (name, avatar, pin, theme = "classic") => {
         const id = newId();
         set((s) => ({
-          profiles: [...s.profiles, { id, name, avatar, pin }],
+          profiles: [...s.profiles, { id, name, avatar, pin, theme }],
           trays: { ...s.trays, [id]: freshTray() },
           activeId: id,
         }));
@@ -65,6 +68,15 @@ export const useLunchStore = create<LunchState>()(
       },
       selectProfile: (id) => set({ activeId: id }),
       logout: () => set({ activeId: null }),
+      setTheme: (theme) =>
+        set((s) => {
+          if (!s.activeId) return s;
+          return {
+            profiles: s.profiles.map((p) =>
+              p.id === s.activeId ? { ...p, theme } : p,
+            ),
+          };
+        }),
       setPick: (category, pick) =>
         set((s) => {
           if (!s.activeId) return s;
@@ -104,10 +116,23 @@ export const useLunchStore = create<LunchState>()(
     }),
     {
       name: "lunch-tray",
-      version: 2,
-      // v2 introduces kid profiles; old single-tray data doesn't map to a
-      // kid, so everyone starts fresh (pre-release, picks take seconds).
-      migrate: () => ({ profiles: [], activeId: null, trays: {} }),
+      version: 3,
+      // v3 adds per-profile themes; older profiles get the classic look.
+      migrate: (persisted: unknown) => {
+        const state = persisted as {
+          profiles?: (Omit<KidProfile, "theme"> & { theme?: ThemeId })[];
+          activeId?: string | null;
+          trays?: Record<string, TrayData>;
+        };
+        return {
+          profiles: (state.profiles ?? []).map((p) => ({
+            ...p,
+            theme: (p.theme && THEMES[p.theme] ? p.theme : "classic") as ThemeId,
+          })),
+          activeId: state.activeId ?? null,
+          trays: state.trays ?? {},
+        };
+      },
     },
   ),
 );
@@ -136,10 +161,13 @@ export function useActiveKid() {
   const trays = useLunchStore((s) => s.trays);
   const profile = mounted ? profiles.find((p) => p.id === activeId) ?? null : null;
   const tray = profile ? trays[profile.id] : undefined;
+  const themeId = profile?.theme ?? "classic";
   return {
     mounted,
     profiles: mounted ? profiles : [],
     profile,
+    themeId,
+    theme: themePack(mounted ? themeId : "classic"),
     picks: tray?.picks ?? emptyTraySelection(),
     avoids: tray?.avoids ?? [],
     filled: profile

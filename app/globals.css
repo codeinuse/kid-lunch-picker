@@ -14,8 +14,22 @@
 }
 
 /* Cheerful light theme always — no dark mode for the kids' app. */
+:root,
+[data-theme="classic"] {
+  --theme-bg: #fff7ed;
+}
+[data-theme="space"] {
+  --theme-bg: #e0e7ff;
+}
+[data-theme="jungle"] {
+  --theme-bg: #dcfce7;
+}
+[data-theme="ocean"] {
+  --theme-bg: #e0f2fe;
+}
+
 body {
-  background: var(--background);
+  background: var(--theme-bg, #fff7ed);
   color: var(--foreground);
   font-family: var(--font-sans);
 }

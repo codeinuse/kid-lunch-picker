@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fredoka, Nunito } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { ThemeApplier, ThemeSceneGate } from "@/components/ThemeScene";
 
 const nunito = Nunito({
   variable: "--font-nunito",
@@ -34,8 +35,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${nunito.variable} ${fredoka.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-orange-50 font-sans">
-        <Providers>{children}</Providers>
+      <body className="min-h-full flex flex-col font-sans">
+        <Providers>
+          <ThemeApplier />
+          <ThemeSceneGate />
+          {children}
+        </Providers>
       </body>
     </html>
   );

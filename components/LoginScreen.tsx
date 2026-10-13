@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useActiveKid, useLunchStore, type KidProfile } from "@/lib/store";
+import { THEME_ORDER, themePack, type ThemeId } from "@/lib/themes";
 import { speak } from "@/lib/speak";
 import { useTapSound } from "@/lib/sounds";
 import { GreeterMascot, PointerMascot } from "@/components/Mascot";
@@ -118,6 +119,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
   const createProfile = useLunchStore((s) => s.createProfile);
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
+  const [themeChoice, setThemeChoice] = useState<ThemeId>("classic");
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [started, setStarted] = useState(false);
@@ -151,7 +153,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
       setPin(next);
       if (next.length === PIN_LENGTH) {
         if (next === firstPin) {
-          const id = createProfile(name.trim().slice(0, 16), avatar, next);
+          const id = createProfile(name.trim().slice(0, 16), avatar, next, themeChoice);
           speak(`Welcome, ${name.trim().slice(0, 16)}!`);
           onDone();
           void id;
@@ -183,6 +185,34 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
       </label>
 
       <div className="w-full max-w-xs">
+        <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
+          Pick your world
+        </p>
+        <div className="mb-4 grid grid-cols-4 gap-2">
+          {THEME_ORDER.map((id) => {
+            const t = themePack(id);
+            const active = themeChoice === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setThemeChoice(id)}
+                aria-pressed={active}
+                aria-label={`${t.name} world`}
+                className={`flex min-h-16 flex-col items-center justify-center rounded-2xl border-[3px] transition-all active:scale-95 ${
+                  active
+                    ? "border-stone-900 bg-white shadow-[0_3px_0_#1c1917]"
+                    : "border-stone-200 bg-white/70"
+                }`}
+              >
+                <span className="text-3xl" aria-hidden>
+                  {t.emoji}
+                </span>
+                <span className="text-[11px] font-extrabold text-stone-600">{t.name}</span>
+              </button>
+            );
+          })}
+        </div>
         <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
           Pick your animal
         </p>
