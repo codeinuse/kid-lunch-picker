@@ -9,13 +9,18 @@ const querySchema = z.object({
   exclude: z.string().max(200).optional().default(""),
 });
 
-const CATEGORY_QUERIES: Record<FoodCategory, string> = {
-  main: "pizza sandwich pasta",
-  side: "french fries rice",
-  fruit: "apple banana",
-  veggie: "broccoli carrot salad",
-  drink: "juice smoothie",
-  snack: "cookie yogurt",
+/**
+ * Single-word search terms per category. Spoonacular's menu-item search
+ * handles one term reliably; multi-word queries often return nothing.
+ * The route fans out over these (in parallel, cached 1h) and merges.
+ */
+const CATEGORY_TERMS: Record<FoodCategory, string[]> = {
+  main: ["pizza", "sandwich"],
+  side: ["fries", "rice"],
+  fruit: ["apple", "banana"],
+  veggie: ["broccoli", "salad"],
+  drink: ["juice", "smoothie"],
+  snack: ["cookie", "yogurt"],
 };
 
 interface SpoonacularResult {
@@ -115,23 +120,30 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const params = new URLSearchParams({
-      apiKey,
-      query: q || CATEGORY_QUERIES[category],
-      number: "20",
-      ...(avoids.length > 0 ? { intolerances: avoids.join(",") } : {}),
-    });
-    const res = await fetch(
-      `https://api.spoonacular.com/food/menuItems/search?${params}`,
-      { next: { revalidate: 3600 } },
+    const terms = q === "" ? CATEGORY_TERMS[category] : [q];
+    const searches = await Promise.all(
+      terms.map(async (term) => {
+        const params = new URLSearchParams({
+          apiKey,
+          query: term,
+          number: "10",
+          ...(avoids.length > 0 ? { intolerances: avoids.join(",") } : {}),
+        });
+        const res = await fetch(
+          `https://api.spoonacular.com/food/menuItems/search?${params}`,
+          { next: { revalidate: 3600 } },
+        );
+        if (!res.ok) throw new Error(`Spoonacular ${res.status}`);
+        const data = (await res.json()) as { menuItems?: SpoonacularResult[] };
+        return data.menuItems ?? [];
+      }),
     );
-    if (!res.ok) throw new Error(`Spoonacular ${res.status}`);
-    const data = (await res.json()) as { menuItems?: SpoonacularResult[] };
+    const menuItems = searches.flat();
     // Match + dedupe on the cleaned name (raw titles carry side-dish
     // parentheticals like "Salmon (Broccoli)" that pollute matching).
     const seen = new Set<string>();
     const live: FoodItem[] = [];
-    for (const m of data.menuItems ?? []) {
+    for (const m of menuItems) {
       const name = cleanName(m.title);
       const key = name.toLowerCase();
       if (seen.has(key)) continue;
