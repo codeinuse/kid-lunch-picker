@@ -3,6 +3,12 @@ import withPWA from "@ducanh2912/next-pwa";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  images: {
+    remotePatterns: [
+      { protocol: "https", hostname: "img.spoonacular.com" },
+      { protocol: "https", hostname: "spoonacular.com" },
+    ],
+  },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
