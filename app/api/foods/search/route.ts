@@ -42,17 +42,127 @@ const ALLERGEN_KEYWORDS: Record<Allergen, string[]> = {
   sesame: ["sesame"],
 };
 
-/** HEAD-check an upstream photo; Spoonacular's `image` field often 404s. */
-async function imageWorks(url: string): Promise<boolean> {
+import { createHash } from "crypto";
+
+/** Process-level cache so repeat visits don't re-download photos. */
+const fingerprintCache = new Map<string, { hash: string; size: number } | null>();
+
+/** Cache for Wikimedia thumbnail lookups (24h server fetch cache too). */
+const thumbCache = new Map<string, string | null>();
+
+/**
+ * Real-food photo backfill from Wikimedia Commons (free, no key).
+ * Used when Spoonacular has no usable photo for an item.
+ */
+async function wikimediaThumb(query: string): Promise<string | null> {
+  const cached = thumbCache.get(query);
+  if (cached !== undefined) return cached;
+  let thumb: string | null = null;
   try {
-    const res = await fetch(url, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(5000),
+    const params = new URLSearchParams({
+      action: "query",
+      format: "json",
+      generator: "search",
+      // JPEG-only: real photos. Rejects GIF warnings, PDF scans, SVG icons.
+      gsrsearch: `${query} filemime:image/jpeg`,
+      gsrnamespace: "6",
+      gsrlimit: "5",
+      prop: "imageinfo",
+      iiprop: "url|size",
+      iiurlwidth: "320",
     });
-    return res.ok;
+    // NOTE: no `next.revalidate` here — combining it with `signal` breaks
+    // the fetch inside route handlers. thumbCache above covers repeats.
+    const res = await fetch(`https://commons.wikimedia.org/w/api.php?${params}`, {
+      signal: AbortSignal.timeout(15000),
+      // Wikimedia throttles/block anonymous bursts — identify ourselves.
+      headers: {
+        "User-Agent": "kid-lunch-picker/1.0 (https://github.com/codeinuse/kid-lunch-picker)",
+      },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as {
+        query?: { pages?: Record<string, { index: number; imageinfo?: { thumburl?: string; width?: number; height?: number }[] }> };
+      };
+      const pages = Object.values(data.query?.pages ?? {}).sort(
+        (a, b) => a.index - b.index,
+      );
+      for (const page of pages) {
+        const info = page.imageinfo?.[0];
+        // Skip tiny icons and extreme panoramas.
+        if (info?.thumburl && (info.width ?? 0) >= 200 && (info.height ?? 0) >= 150) {
+          thumb = info.thumburl;
+          break;
+        }
+      }
+    }
   } catch {
-    return false;
+    thumb = null;
   }
+  thumbCache.set(query, thumb);
+  return thumb;
+}
+
+/** Bounded-parallel map (gentle on free APIs). */
+async function mapPool<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(limit, items.length) },
+    async () => {
+      while (next < items.length) {
+        const idx = next++;
+        results[idx] = await fn(items[idx]);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
+}
+
+/** Full name first, then the last word ("Aloha Pineapple Smoothie" → "Smoothie"). */
+async function thumbWithFallback(name: string): Promise<string | null> {
+  const direct = await wikimediaThumb(name);
+  if (direct) return direct;
+  const words = name.split(/\s+/);
+  if (words.length > 1) {
+    return wikimediaThumb(words[words.length - 1]);
+  }
+  return null;
+}
+
+/** Photos smaller than this that are shared across items = placeholder art. */
+const PLACEHOLDER_MAX_BYTES = 10240;
+
+/**
+ * Fingerprint an upstream photo by content hash + size. Spoonacular's
+ * `image` field often points at dead files (404) or a generic grey-dome
+ * placeholder served byte-identical under many different URLs.
+ * Returns null when the photo is missing/unreadable.
+ */
+async function imageFingerprint(
+  url: string,
+): Promise<{ hash: string; size: number } | null> {
+  const cached = fingerprintCache.get(url);
+  if (cached !== undefined) return cached;
+  let fp: { hash: string; size: number } | null = null;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (res.ok) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length > 0) {
+        fp = { hash: createHash("md5").update(buf).digest("hex"), size: buf.length };
+      }
+    }
+  } catch {
+    fp = null;
+  }
+  fingerprintCache.set(url, fp);
+  return fp;
 }
 
 /** Drop live items whose title mentions an avoided allergen. */
@@ -176,15 +286,46 @@ export async function GET(req: NextRequest) {
       });
       if (live.length >= 8) break;
     }
-    // Strip dead photo URLs so cards never show broken images
-    // (the emoji fallback renders instead). CDN checks, not API quota.
-    const checks = await Promise.all(
-      live.map((item) => (item.imageUrl ? imageWorks(item.imageUrl) : false)),
+    // Strip dead AND placeholder photos. Placeholders are byte-identical
+    // across different items AND tiny; a photo shared by 2+ items that is
+    // also small is generic art. Large shared photos are kept (real photo
+    // reused for variants beats an emoji). Cards fall back to emoji instead.
+    // (CDN downloads, not API quota; fingerprinted once then cached.)
+    const fps = await Promise.all(
+      live.map((item) =>
+        item.imageUrl ? imageFingerprint(item.imageUrl) : null,
+      ),
     );
+    const seenFp = new Map<string, number>();
+    for (const fp of fps) {
+      if (fp) seenFp.set(fp.hash, (seenFp.get(fp.hash) ?? 0) + 1);
+    }
     live.forEach((item, i) => {
-      if (item.imageUrl && !checks[i]) delete item.imageUrl;
+      const fp = fps[i];
+      if (
+        !item.imageUrl ||
+        !fp ||
+        ((seenFp.get(fp.hash) ?? 0) > 1 && fp.size < PLACEHOLDER_MAX_BYTES)
+      ) {
+        delete item.imageUrl;
+      }
     });
-    return NextResponse.json({ items: [...live, ...local], source: "mixed" });
+    // Backfill missing photos with real Commons pictures — live items
+    // and curated items alike. Curated items are copied, never mutated,
+    // so the offline/no-key path stays pristine.
+    const missing = live.filter((item) => !item.imageUrl);
+    const thumbs = await mapPool(missing, 4, (item) => thumbWithFallback(item.name));
+    missing.forEach((item, i) => {
+      if (thumbs[i]) item.imageUrl = thumbs[i] ?? undefined;
+    });
+    const noPhotoLocal = local.filter((f) => !f.imageUrl);
+    const localThumbs = await mapPool(noPhotoLocal, 4, (f) => thumbWithFallback(f.name));
+    const localThumbById = new Map(noPhotoLocal.map((f, i) => [f.id, localThumbs[i]]));
+    const enrichedLocal = local.map((f) => {
+      const t = localThumbById.get(f.id);
+      return t ? { ...f, imageUrl: t } : f;
+    });
+    return NextResponse.json({ items: [...live, ...enrichedLocal], source: "mixed" });
   } catch {
     // API hiccup — never break the kid's flow, fall back to curated.
     return NextResponse.json({ items: local, source: "curated-fallback" });

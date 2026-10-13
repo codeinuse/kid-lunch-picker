@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "img.spoonacular.com" },
       { protocol: "https", hostname: "spoonacular.com" },
+      { protocol: "https", hostname: "upload.wikimedia.org" },
+      { protocol: "https", hostname: "thumb.wikimedia.org" },
     ],
   },
   cacheComponents: true,

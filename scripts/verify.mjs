@@ -9,6 +9,7 @@
  * Requires the app running (default http://localhost:3000).
  * Exit code 0 = all green, 1 = something failed.
  */
+import { createHash } from "node:crypto";
 const BASE = process.argv[2] ?? process.env.BASE_URL ?? "http://localhost:3000";
 const CATEGORIES = ["main", "side", "fruit", "veggie", "drink", "snack"];
 const MEATY = [
@@ -42,16 +43,22 @@ async function get(path, timeoutMs = 30000) {
   }
 }
 
-async function headOk(url) {
+async function downloadBytes(url) {
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 10000);
-    const res = await fetch(url, { method: "HEAD", signal: ctrl.signal });
+    const t = setTimeout(() => ctrl.abort(), 15000);
+    const res = await fetch(url, { signal: ctrl.signal });
     clearTimeout(t);
-    return res.ok;
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length > 0 ? buf : null;
   } catch {
-    return false;
+    return null;
   }
+}
+
+function md5(buf) {
+  return createHash("md5").update(buf).digest("hex");
 }
 
 console.log(`\n🔍 Verifying ${BASE}\n`);
@@ -151,20 +158,36 @@ for (const c of ["drink", "snack"]) {
   }
 }
 
-console.log("\n— photo URLs actually load —");
+console.log("\n— photos are real (load + not placeholder art) —");
 const photoItems = Object.entries(feeds).flatMap(([c, items]) =>
   (items ?? []).filter((i) => i.imageUrl).map((i) => ({ ...i, c })),
 );
-console.log(`  checking ${photoItems.length} photos…`);
+console.log(`  downloading ${photoItems.length} photos…`);
 const photoResults = await Promise.all(
-  photoItems.map(async (i) => ({ item: i, alive: await headOk(i.imageUrl) })),
+  photoItems.map(async (i) => ({ item: i, buf: await downloadBytes(i.imageUrl) })),
 );
-const dead = photoResults.filter((r) => !r.alive);
+const dead = photoResults.filter((r) => !r.buf);
 dead.length === 0
-  ? ok(`all ${photoItems.length} photos load`)
+  ? ok(`all ${photoItems.length} photos download`)
   : bad(
-      "photos load",
+      "photos download",
       `${dead.length} dead: ` + dead.map((r) => `${r.item.c}/${r.item.name}`).join(", "),
+    );
+// Placeholder art is byte-identical under different URLs — shared bytes = fake.
+const fpCount = new Map();
+for (const r of photoResults) {
+  if (!r.buf) continue;
+  const fp = md5(r.buf);
+  r.fp = fp;
+  fpCount.set(fp, (fpCount.get(fp) ?? 0) + 1);
+}
+const placeholders = photoResults.filter((r) => r.fp && fpCount.get(r.fp) > 1);
+placeholders.length === 0
+  ? ok("no placeholder art served")
+  : bad(
+      "no placeholder art",
+      `${placeholders.length} share bytes: ` +
+        placeholders.map((r) => `${r.item.c}/${r.item.name}`).join(", "),
     );
 
 console.log(`\n${fail === 0 ? "🎉" : "⚠️"} ${pass} passed, ${fail} failed\n`);
