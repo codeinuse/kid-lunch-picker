@@ -34,8 +34,15 @@ export interface FoodItem {
   source: "curated" | "spoonacular" | "usda";
 }
 
+/** A food plus the kid's chosen options (size, toppings, ...). */
+export interface PickedFood {
+  item: FoodItem;
+  /** option group id -> choice id */
+  options: Record<string, string>;
+}
+
 /** One picked item per tray slot. */
-export type TraySelection = Record<FoodCategory, FoodItem | null>;
+export type TraySelection = Record<FoodCategory, PickedFood | null>;
 
 /** Parent-configured avoid list, stored locally in MVP (no accounts). */
 export interface LocalProfile {

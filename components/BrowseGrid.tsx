@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
 import { useTrayStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
+import { OptionsSheet } from "@/components/OptionsSheet";
 
 async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]> {
   const res = await fetch(
@@ -20,7 +22,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
   const info = categoryInfo(category);
   const avoids = useTrayStore((s) => s.avoids);
   const picks = useTrayStore((s) => s.picks);
-  const setPick = useTrayStore((s) => s.setPick);
+  const [pending, setPending] = useState<FoodItem | null>(null);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["foods", category, avoids.join(",")],
@@ -82,8 +84,8 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
             <FoodCard
               key={item.id}
               item={item}
-              selected={picks[category]?.id === item.id}
-              onPick={(picked) => setPick(category, picked)}
+              selected={picks[category]?.item.id === item.id}
+              onPick={setPending}
             />
           ))}
         </div>
@@ -97,6 +99,8 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
           Done! Back to Tray ✅
         </Link>
       )}
+
+      <OptionsSheet item={pending} onClose={() => setPending(null)} />
     </main>
   );
 }
