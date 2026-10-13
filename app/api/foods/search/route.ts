@@ -13,8 +13,8 @@ const CATEGORY_QUERIES: Record<FoodCategory, string> = {
   main: "pizza sandwich pasta",
   side: "french fries rice",
   fruit: "apple banana",
-  veggie: "carrot broccoli",
-  drink: "milk juice",
+  veggie: "broccoli carrot salad",
+  drink: "juice smoothie",
   snack: "cookie yogurt",
 };
 
@@ -45,11 +45,34 @@ function containsAvoidedAllergen(title: string, avoids: Allergen[]): boolean {
 
 /** Clean a menu-item title into a short kid-friendly name. */
 function cleanName(title: string): string {
-  const base = title.split("(")[0].split(",")[0].trim();
+  let base = title.split("(")[0].split(",")[0].split(" - ")[0].trim();
+  base = base
+    .replace(/\\'/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+(LG|SM|MD|RG|XL)\.?$/i, "")
+    .replace(/\s+No\s+.*$/i, "")
+    .trim();
   if (base.length <= 24) return base;
   const cut = base.slice(0, 24);
   const lastSpace = cut.lastIndexOf(" ");
   return (lastSpace > 8 ? cut.slice(0, lastSpace) : cut).trim();
+}
+
+/** Meat/fish keywords — never belong in fruit/veggie/drink grids. */
+const MEATY = [
+  "chicken", "beef", "pork", "bacon", "ham", "turkey", "steak",
+  "fish", "salmon", "tuna", "flounder", "shrimp", "crab",
+  "lobster", "clam", "cod", "tilapia", "meat", "pepperoni",
+];
+
+function isJunkForCategory(name: string, category: FoodCategory): boolean {
+  if (category !== "fruit" && category !== "veggie" && category !== "drink") {
+    return false;
+  }
+  const t = name.toLowerCase();
+  return MEATY.some((k) => t.includes(k));
 }
 
 /** Map a Spoonacular menu-item title to our category (best effort). */
@@ -95,7 +118,7 @@ export async function GET(req: NextRequest) {
     const params = new URLSearchParams({
       apiKey,
       query: q || CATEGORY_QUERIES[category],
-      number: "12",
+      number: "20",
       ...(avoids.length > 0 ? { intolerances: avoids.join(",") } : {}),
     });
     const res = await fetch(
@@ -104,19 +127,29 @@ export async function GET(req: NextRequest) {
     );
     if (!res.ok) throw new Error(`Spoonacular ${res.status}`);
     const data = (await res.json()) as { menuItems?: SpoonacularResult[] };
-    const live: FoodItem[] = (data.menuItems ?? [])
-      .filter((m) => matchesCategory(m.title, category))
-      .filter((m) => !containsAvoidedAllergen(m.title, avoids))
-      .slice(0, 8)
-      .map((m) => ({
+    // Match + dedupe on the cleaned name (raw titles carry side-dish
+    // parentheticals like "Salmon (Broccoli)" that pollute matching).
+    const seen = new Set<string>();
+    const live: FoodItem[] = [];
+    for (const m of data.menuItems ?? []) {
+      const name = cleanName(m.title);
+      const key = name.toLowerCase();
+      if (seen.has(key)) continue;
+      if (!matchesCategory(name, category)) continue;
+      if (isJunkForCategory(name, category)) continue;
+      if (containsAvoidedAllergen(m.title, avoids)) continue;
+      seen.add(key);
+      live.push({
         id: `sp-${m.id}`,
-        name: cleanName(m.title),
+        name,
         emoji: "🍱",
         imageUrl: m.image,
         category,
         allergens: [] as Allergen[],
         source: "spoonacular" as const,
-      }));
+      });
+      if (live.length >= 8) break;
+    }
     return NextResponse.json({ items: [...live, ...local], source: "mixed" });
   } catch {
     // API hiccup — never break the kid's flow, fall back to curated.

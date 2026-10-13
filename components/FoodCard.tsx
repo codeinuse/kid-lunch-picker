@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import type { FoodItem } from "@/lib/types";
 import { speak } from "@/lib/speak";
 
@@ -13,6 +14,9 @@ interface Props {
 
 /** Big tap target (min 64dp+) with photo/emoji + 1–2 word label. */
 export function FoodCard({ item, selected, onPick }: Props) {
+  // If the photo fails to load, fall back to the emoji — never a broken card.
+  const [imgOk, setImgOk] = useState(true);
+  const showPhoto = item.imageUrl && imgOk;
   return (
     <motion.button
       type="button"
@@ -27,14 +31,16 @@ export function FoodCard({ item, selected, onPick }: Props) {
         selected ? "border-green-500 bg-green-50" : "border-transparent"
       }`}
     >
-      {item.imageUrl ? (
+      {showPhoto ? (
         <Image
-          src={item.imageUrl}
+          src={item.imageUrl!}
           alt={item.name}
           width={96}
           height={96}
+          sizes="96px"
           className="h-24 w-24 rounded-2xl object-cover"
           loading="lazy"
+          onError={() => setImgOk(false)}
         />
       ) : (
         <span className="text-7xl" role="img" aria-hidden>

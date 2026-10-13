@@ -19,12 +19,14 @@ export function OptionsSheet({ item, onClose }: Props) {
   const router = useRouter();
   const setPick = useTrayStore((s) => s.setPick);
   const [options, setOptions] = useState<Record<string, string>>({});
+  const [imgOk, setImgOk] = useState(true);
 
   const groups = item ? optionsFor(item.id, item.category) : [];
 
   useEffect(() => {
     if (item) {
       setOptions(defaultOptions(optionsFor(item.id, item.category)));
+      setImgOk(true);
       speak(item.name);
     }
   }, [item]);
@@ -47,14 +49,19 @@ export function OptionsSheet({ item, onClose }: Props) {
                 {item.emoji} {item.name}!
               </Dialog.Title>
 
-              {item.imageUrl && (
+              {item.imageUrl && imgOk ? (
                 <Image
                   src={item.imageUrl}
                   alt={item.name}
                   width={192}
                   height={192}
                   className="h-48 w-48 rounded-3xl object-cover shadow"
+                  onError={() => setImgOk(false)}
                 />
+              ) : (
+                <span className="text-9xl" role="img" aria-hidden>
+                  {item.emoji}
+                </span>
               )}
 
               {groups.map((group) => (
