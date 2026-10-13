@@ -9,6 +9,7 @@ import { defaultOptions, optionsFor } from "@/lib/options";
 import { useMounted, useTrayStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
+import { PointerMascot } from "@/components/Mascot";
 
 async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]> {
   const res = await fetch(
@@ -54,12 +55,12 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
         <Link
           href="/"
           aria-label="Back to tray"
-          className="flex min-h-16 min-w-16 items-center justify-center rounded-full bg-white text-3xl shadow ring-1 ring-stone-200 active:scale-95"
+          className="sticker-sm flex min-h-16 min-w-16 shrink-0 items-center justify-center text-3xl active:translate-y-0.5 active:shadow-none"
         >
           ←
         </Link>
         <div>
-          <h1 className="text-3xl font-black text-stone-800">
+          <h1 className="font-display text-3xl font-semibold text-stone-800">
             {info.emoji} Pick a {info.label}!
           </h1>
           <p className="text-lg font-bold text-stone-500">
@@ -89,9 +90,9 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
       )}
 
       {data && data.length === 0 && (
-        <div className="rounded-3xl bg-white p-6 text-center shadow">
-          <p className="text-4xl" aria-hidden>🔍</p>
-          <p className="mt-2 text-xl font-extrabold text-stone-700">
+        <div className="sticker p-6 text-center">
+          <PointerMascot className="mx-auto h-28 w-auto" />
+          <p className="mt-2 font-display text-2xl font-medium text-stone-700">
             No foods here right now!
           </p>
         </div>
@@ -113,7 +114,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
       {data && data.length > 0 && (
         <Link
           href="/"
-          className="mt-2 flex min-h-16 w-full items-center justify-center rounded-full bg-green-500 text-2xl font-black text-white shadow-lg active:scale-95"
+          className="mt-2 flex min-h-16 w-full items-center justify-center rounded-full border-[3px] border-stone-900 bg-green-700 font-display text-2xl font-semibold text-white shadow-[0_5px_0_#1c1917] active:translate-y-1 active:shadow-none"
         >
           Done! Back to Tray ✅
         </Link>

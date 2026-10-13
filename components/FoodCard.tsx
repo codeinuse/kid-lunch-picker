@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { FoodItem } from "@/lib/types";
 import { speak } from "@/lib/speak";
+import { useTapSound } from "@/lib/sounds";
 
 interface Props {
   item: FoodItem;
@@ -17,18 +18,20 @@ export function FoodCard({ item, selected, onPick }: Props) {
   // If the photo fails to load, fall back to the emoji — never a broken card.
   const [imgOk, setImgOk] = useState(true);
   const showPhoto = item.imageUrl && imgOk;
+  const tap = useTapSound();
   return (
     <motion.button
       type="button"
       whileTap={{ scale: 0.93 }}
       onClick={() => {
+        tap();
         onPick(item);
         speak(item.name);
       }}
       aria-pressed={selected}
       aria-label={`Pick ${item.name}`}
-      className={`flex min-h-36 min-w-36 flex-col items-center justify-center gap-1 rounded-3xl border-4 bg-white p-4 shadow-sm transition-colors ${
-        selected ? "border-green-500 bg-green-50" : "border-transparent"
+      className={`sticker flex min-h-36 min-w-36 flex-col items-center justify-center gap-1 p-4 transition-colors ${
+        selected ? "bg-green-100" : ""
       }`}
     >
       {showPhoto ? (
@@ -47,7 +50,7 @@ export function FoodCard({ item, selected, onPick }: Props) {
           {item.emoji}
         </span>
       )}
-      <span className="text-xl font-extrabold text-stone-800">{item.name}</span>
+      <span className="font-display text-xl font-medium text-stone-800">{item.name}</span>
       {selected && <span className="text-3xl" aria-hidden>✅</span>}
     </motion.button>
   );

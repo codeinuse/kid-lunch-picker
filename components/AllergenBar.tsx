@@ -2,6 +2,7 @@
 
 import type { Allergen } from "@/lib/types";
 import { useMounted, useTrayStore } from "@/lib/store";
+import { useTapSound } from "@/lib/sounds";
 
 const BIG9: { id: Allergen; label: string; emoji: string }[] = [
   { id: "milk", label: "Milk", emoji: "🥛" },
@@ -22,6 +23,7 @@ export function AllergenBar() {
   const storeAvoids = useTrayStore((s) => s.avoids);
   const toggleAvoid = useTrayStore((s) => s.toggleAvoid);
   const avoids = mounted ? storeAvoids : [];
+  const tap = useTapSound();
   return (
     <section aria-label="Foods to avoid" className="w-full">
       <p className="mb-2 text-center text-sm font-bold text-stone-500">
@@ -34,12 +36,15 @@ export function AllergenBar() {
             <button
               key={a.id}
               type="button"
-              onClick={() => toggleAvoid(a.id)}
+              onClick={() => {
+                tap();
+                toggleAvoid(a.id);
+              }}
               aria-pressed={active}
-              className={`min-h-11 rounded-full px-3 py-2 text-sm font-bold shadow-sm transition-colors ${
+              className={`min-h-11 rounded-full border-2 px-3 py-2 text-sm font-bold transition-all active:translate-y-0.5 ${
                 active
-                  ? "bg-red-500 text-white"
-                  : "bg-white text-stone-600 ring-1 ring-stone-200"
+                  ? "border-stone-900 bg-red-600 text-white shadow-[0_3px_0_#1c1917] active:shadow-none"
+                  : "border-stone-300 bg-white text-stone-600 shadow-sm"
               }`}
             >
               <span aria-hidden>{a.emoji}</span> {active ? `No ${a.label} ✕` : a.label}

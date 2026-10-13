@@ -8,6 +8,7 @@ import type { FoodItem } from "@/lib/types";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useTrayStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
+import { useAddSound, useTapSound } from "@/lib/sounds";
 
 interface Props {
   item: FoodItem | null;
@@ -18,6 +19,8 @@ interface Props {
 export function OptionsSheet({ item, onClose }: Props) {
   const router = useRouter();
   const setPick = useTrayStore((s) => s.setPick);
+  const tap = useTapSound();
+  const add = useAddSound();
   const [options, setOptions] = useState<Record<string, string>>({});
   const [imgOk, setImgOk] = useState(true);
 
@@ -56,7 +59,7 @@ export function OptionsSheet({ item, onClose }: Props) {
                 className="h-1.5 w-16 rounded-full bg-stone-300"
                 aria-hidden
               />
-              <Dialog.Title className="text-center text-3xl font-black text-stone-800">
+              <Dialog.Title className="text-center font-display text-3xl font-semibold text-stone-800">
                 {item.emoji} {item.name}!
               </Dialog.Title>
 
@@ -88,14 +91,15 @@ export function OptionsSheet({ item, onClose }: Props) {
                           key={choice.id}
                           type="button"
                           onClick={() => {
+                            tap();
                             setOptions((o) => ({ ...o, [group.id]: choice.id }));
                             speak(choice.label);
                           }}
                           aria-pressed={active}
-                          className={`flex min-h-16 min-w-16 flex-col items-center justify-center rounded-2xl px-4 py-2 shadow-sm transition-all active:scale-95 ${
+                          className={`flex min-h-16 min-w-16 flex-col items-center justify-center rounded-2xl border-[3px] px-4 py-2 transition-all active:translate-y-0.5 ${
                             active
-                              ? "bg-green-500 text-white ring-4 ring-green-300"
-                              : "bg-white text-stone-700 ring-1 ring-stone-200"
+                              ? "border-stone-900 bg-green-700 text-white shadow-[0_3px_0_#1c1917]"
+                              : "sticker-sm text-stone-700 active:shadow-none"
                           }`}
                         >
                           <span className="text-3xl" aria-hidden>
@@ -114,12 +118,13 @@ export function OptionsSheet({ item, onClose }: Props) {
               <button
                 type="button"
                 onClick={() => {
+                  add();
                   setPick(item.category, { item, options });
                   speak(`${item.name} added!`);
                   onClose();
                   router.push("/");
                 }}
-                className="mt-1 flex min-h-16 w-full items-center justify-center rounded-full bg-green-500 text-2xl font-black text-white shadow-lg active:scale-95"
+                className="mt-1 flex min-h-16 w-full items-center justify-center rounded-full border-[3px] border-stone-900 bg-green-700 font-display text-2xl font-semibold text-white shadow-[0_5px_0_#1c1917] active:translate-y-1 active:shadow-none"
               >
                 Add to Tray! ✅
               </button>

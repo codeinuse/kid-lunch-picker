@@ -1,8 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Lottie } from "lottie-react";
 import { useMounted, useTrayStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
+import { useFanfareSound, useTapSound } from "@/lib/sounds";
+import { CheererMascot } from "@/components/Mascot";
 import { useEffect, useRef } from "react";
 
 /** Progress bar + celebration when the tray is complete. */
@@ -14,21 +17,24 @@ export function Celebration() {
   const total = useTrayStore((s) => s.totalSlots);
   const filled = mounted ? filledCount() : 0;
   const clearTray = useTrayStore((s) => s.clearTray);
+  const fanfare = useFanfareSound();
+  const tap = useTapSound();
   const announced = useRef(false);
   const complete = filled === total;
 
   useEffect(() => {
     if (complete && !announced.current) {
       announced.current = true;
+      fanfare();
       speak("All done! Great lunch!");
     }
     if (!complete) announced.current = false;
-  }, [complete]);
+  }, [complete, fanfare]);
 
   return (
     <div className="w-full">
       <div
-        className="h-5 w-full overflow-hidden rounded-full bg-stone-200"
+        className="h-6 w-full overflow-hidden rounded-full border-2 border-stone-900 bg-white"
         role="progressbar"
         aria-valuenow={filled}
         aria-valuemin={0}
@@ -41,31 +47,44 @@ export function Celebration() {
           transition={{ type: "spring", stiffness: 120, damping: 20 }}
         />
       </div>
-      <p className="mt-1 text-center text-lg font-extrabold text-stone-700">
+      <p className="mt-1 text-center font-display text-2xl font-semibold text-stone-700">
         {complete ? "🎉 All done! Great lunch! 🎉" : `You picked ${filled} of ${total}!`}
       </p>
       {complete && (
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="mt-2 rounded-3xl bg-yellow-100 p-4 text-center ring-4 ring-yellow-300"
+          className="sticker relative mt-2 overflow-hidden p-4 text-center"
         >
-          <p className="text-4xl" aria-hidden>🦁🎊🍱🎊🦁</p>
-          <p className="mt-1 text-xl font-black text-stone-800">
-            Leo the Lion loves your lunch!
+          <Lottie
+            src="/lottie/confetti.json"
+            autoplay
+            loop={false}
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 mx-auto h-40 w-full"
+          />
+          <CheererMascot className="relative mx-auto h-36 w-auto" />
+          <p className="relative mt-1 font-display text-2xl font-semibold text-stone-800">
+            Leo loves your lunch!
           </p>
-          <div className="mt-2 flex flex-col gap-2">
+          <div className="relative mt-3 flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => window.print()}
-              className="min-h-12 rounded-full bg-sky-500 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+              onClick={() => {
+                tap();
+                window.print();
+              }}
+              className="min-h-12 rounded-full bg-sky-700 px-6 py-3 font-display text-xl font-semibold text-white shadow active:scale-95"
             >
               Print My Lunch! 🖨️
             </button>
             <button
               type="button"
-              onClick={clearTray}
-              className="min-h-12 rounded-full bg-orange-500 px-6 py-3 text-lg font-extrabold text-white shadow active:scale-95"
+              onClick={() => {
+                tap();
+                clearTray();
+              }}
+              className="min-h-12 rounded-full bg-orange-700 px-6 py-3 font-display text-xl font-semibold text-white shadow active:scale-95"
             >
               Start Over 🔄
             </button>

@@ -32,7 +32,9 @@ export function PrintSummary() {
       aria-label="Printable lunch order"
       className="hidden print:block"
     >
-      <h1 style={{ fontSize: 28, fontWeight: 900 }}>🍱 My Lunch Order</h1>
+      <h1 style={{ fontSize: 30, fontWeight: 600, fontFamily: "Fredoka, Nunito, sans-serif" }}>
+        🍱 My Lunch Order
+      </h1>
       <p style={{ fontSize: 16 }}>{today}</p>
       <hr />
       <ul style={{ listStyle: "none", padding: 0 }}>

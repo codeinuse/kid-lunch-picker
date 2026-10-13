@@ -33,7 +33,7 @@ export function TrayGrid() {
                 ? `${cat.label}: ${pick.item.name}. Tap to change.`
                 : `${cat.label}: empty. Tap to pick.`
             }
-            className={`flex min-h-40 flex-col items-center justify-center gap-1 rounded-3xl p-3 shadow-sm ring-4 transition-transform active:scale-95 ${cat.bg} ${pick ? cat.accent : "ring-white/60"}`}
+            className={`sticker flex min-h-40 flex-col items-center justify-center gap-1 p-3 transition-transform active:translate-y-1 active:shadow-none ${cat.bg}`}
           >
             <motion.span
               key={pick?.item.id ?? "empty"}
@@ -47,7 +47,7 @@ export function TrayGrid() {
             <span className="text-base font-extrabold text-stone-700">
               {cat.label}
             </span>
-            <span className="text-lg font-bold text-stone-800">
+            <span className="break-words text-center font-display text-lg font-medium leading-tight text-stone-800">
               {pick?.item ? pick.item.name : "Pick! 👆"}
             </span>
             {summary !== "" && (
