@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Lottie } from "lottie-react";
-import { useMounted, useTrayStore } from "@/lib/store";
+import { useActiveKid, useLunchStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
 import { useFanfareSound, useTapSound } from "@/lib/sounds";
 import { CheererMascot } from "@/components/Mascot";
@@ -10,13 +10,9 @@ import { useEffect, useRef } from "react";
 
 /** Progress bar + celebration when the tray is complete. */
 export function Celebration() {
-  // Render the server-identical empty state until mounted (persisted
-  // picks would otherwise mismatch the SSR HTML → hydration error).
-  const mounted = useMounted();
-  const filledCount = useTrayStore((s) => s.filledCount);
-  const total = useTrayStore((s) => s.totalSlots);
-  const filled = mounted ? filledCount() : 0;
-  const clearTray = useTrayStore((s) => s.clearTray);
+  const { filled } = useActiveKid();
+  const total = useLunchStore((s) => s.totalSlots);
+  const clearTray = useLunchStore((s) => s.clearTray);
   const fanfare = useFanfareSound();
   const tap = useTapSound();
   const announced = useRef(false);

@@ -3,11 +3,14 @@ import { Celebration } from "@/components/Celebration";
 import { AllergenBar } from "@/components/AllergenBar";
 import { PrintSummary } from "@/components/PrintSummary";
 import { GreeterMascot } from "@/components/Mascot";
+import { AuthGate } from "@/components/AuthGate";
+import { ProfileChip } from "@/components/ProfileChip";
 
 export default function Home() {
   return (
-    <>
+    <AuthGate>
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-5 px-4 py-6">
+      <ProfileChip />
       <header className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
         <GreeterMascot className="h-24 w-auto shrink-0 sm:h-28" />
         <div className="min-w-0">
@@ -31,6 +34,6 @@ export default function Home() {
       </footer>
     </main>
     <PrintSummary />
-    </>
+    </AuthGate>
   );
 }

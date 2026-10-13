@@ -6,7 +6,7 @@ import { useState } from "react";
 import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
 import { defaultOptions, optionsFor } from "@/lib/options";
-import { useMounted, useTrayStore } from "@/lib/store";
+import { useActiveKid, useLunchStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
 import { PointerMascot } from "@/components/Mascot";
@@ -22,10 +22,8 @@ async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]
 
 export function BrowseGrid({ category }: { category: FoodCategory }) {
   const info = categoryInfo(category);
-  const mounted = useMounted();
-  const avoids = useTrayStore((s) => s.avoids);
-  const picks = useTrayStore((s) => s.picks);
-  const setPick = useTrayStore((s) => s.setPick);
+  const { mounted, avoids, picks } = useActiveKid();
+  const setPick = useLunchStore((s) => s.setPick);
 
   /**
    * Tap = added immediately with default options, sheet opens for tweaks.

@@ -6,7 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useEffect, useState } from "react";
 import type { FoodItem } from "@/lib/types";
 import { defaultOptions, optionsFor } from "@/lib/options";
-import { useTrayStore } from "@/lib/store";
+import { useActiveKid, useLunchStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
 import { useAddSound, useTapSound } from "@/lib/sounds";
 
@@ -18,7 +18,7 @@ interface Props {
 /** Bottom sheet: big photo + option chips + "Add to Tray!". */
 export function OptionsSheet({ item, onClose }: Props) {
   const router = useRouter();
-  const setPick = useTrayStore((s) => s.setPick);
+  const setPick = useLunchStore((s) => s.setPick);
   const tap = useTapSound();
   const add = useAddSound();
   const [options, setOptions] = useState<Record<string, string>>({});
@@ -26,9 +26,8 @@ export function OptionsSheet({ item, onClose }: Props) {
 
   const groups = item ? optionsFor(item.id, item.category) : [];
 
-  const existing = useTrayStore((s) =>
-    item ? s.picks[item.category] : null,
-  );
+  const { picks } = useActiveKid();
+  const existing = item ? picks[item.category] : null;
 
   useEffect(() => {
     if (item) {

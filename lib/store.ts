@@ -12,19 +12,105 @@ import type {
 } from "./types";
 import { CATEGORIES } from "./categories";
 
-interface TrayState {
+export interface KidProfile {
+  id: string;
+  name: string;
+  avatar: string;
+  /** 4-digit device PIN (kept on this device only). */
+  pin: string;
+}
+
+export interface TrayData {
   picks: TraySelection;
   avoids: Allergen[];
+}
+
+interface LunchState {
+  profiles: KidProfile[];
+  activeId: string | null;
+  trays: Record<string, TrayData>;
+  totalSlots: number;
+  createProfile: (name: string, avatar: string, pin: string) => string;
+  selectProfile: (id: string) => void;
+  logout: () => void;
   setPick: (category: FoodCategory, pick: PickedFood | null) => void;
   toggleAvoid: (allergen: Allergen) => void;
   clearTray: () => void;
-  /** Number of filled slots. */
-  filledCount: () => number;
-  totalSlots: number;
 }
 
 export const emptyTraySelection = (): TraySelection =>
   Object.fromEntries(CATEGORIES.map((c) => [c.id, null])) as TraySelection;
+
+const freshTray = (): TrayData => ({ picks: emptyTraySelection(), avoids: [] });
+
+function newId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export const useLunchStore = create<LunchState>()(
+  persist(
+    (set) => ({
+      profiles: [],
+      activeId: null,
+      trays: {},
+      totalSlots: CATEGORIES.length,
+      createProfile: (name, avatar, pin) => {
+        const id = newId();
+        set((s) => ({
+          profiles: [...s.profiles, { id, name, avatar, pin }],
+          trays: { ...s.trays, [id]: freshTray() },
+          activeId: id,
+        }));
+        return id;
+      },
+      selectProfile: (id) => set({ activeId: id }),
+      logout: () => set({ activeId: null }),
+      setPick: (category, pick) =>
+        set((s) => {
+          if (!s.activeId) return s;
+          const tray = s.trays[s.activeId] ?? freshTray();
+          return {
+            trays: {
+              ...s.trays,
+              [s.activeId]: {
+                ...tray,
+                picks: { ...tray.picks, [category]: pick },
+              },
+            },
+          };
+        }),
+      toggleAvoid: (allergen) =>
+        set((s) => {
+          if (!s.activeId) return s;
+          const tray = s.trays[s.activeId] ?? freshTray();
+          const avoids = tray.avoids.includes(allergen)
+            ? tray.avoids.filter((a) => a !== allergen)
+            : [...tray.avoids, allergen];
+          return {
+            trays: { ...s.trays, [s.activeId]: { ...tray, avoids } },
+          };
+        }),
+      clearTray: () =>
+        set((s) => {
+          if (!s.activeId) return s;
+          const tray = s.trays[s.activeId] ?? freshTray();
+          return {
+            trays: {
+              ...s.trays,
+              [s.activeId]: { ...tray, picks: emptyTraySelection() },
+            },
+          };
+        }),
+    }),
+    {
+      name: "lunch-tray",
+      version: 2,
+      // v2 introduces kid profiles; old single-tray data doesn't map to a
+      // kid, so everyone starts fresh (pre-release, picks take seconds).
+      migrate: () => ({ profiles: [], activeId: null, trays: {} }),
+    },
+  ),
+);
 
 /**
  * False during SSR and the first client render, true afterwards.
@@ -39,42 +125,28 @@ export function useMounted() {
   return mounted;
 }
 
-export const useTrayStore = create<TrayState>()(
-  persist(
-    (set, get) => ({
-      picks: emptyTraySelection(),
-      avoids: [],
-      setPick: (category, pick) =>
-        set((s) => ({ picks: { ...s.picks, [category]: pick } })),
-      toggleAvoid: (allergen) =>
-        set((s) => ({
-          avoids: s.avoids.includes(allergen)
-            ? s.avoids.filter((a) => a !== allergen)
-            : [...s.avoids, allergen],
-        })),
-      clearTray: () => set({ picks: emptyTraySelection() }),
-      filledCount: () =>
-        Object.values(get().picks).filter((p) => p !== null).length,
-      totalSlots: CATEGORIES.length,
-    }),
-    {
-      name: "lunch-tray",
-      version: 1,
-      migrate: (persisted: unknown) => {
-        const state = persisted as { picks?: Record<string, unknown>; avoids?: Allergen[] };
-        const picks = emptyTraySelection();
-        for (const cat of CATEGORIES.map((c) => c.id)) {
-          const old = state.picks?.[cat] as { item?: FoodItem; id?: string } | null;
-          if (old && typeof old === "object") {
-            // v0 stored a bare FoodItem; v1 wraps it with options.
-            picks[cat] =
-              "item" in old && old.item
-                ? (old as PickedFood)
-                : { item: old as unknown as FoodItem, options: {} };
-          }
-        }
-        return { picks, avoids: state.avoids ?? [] };
-      },
-    },
-  ),
-);
+/**
+ * The signed-in kid's profile + tray. Before mount (or signed out),
+ * returns safe empty defaults matching the SSR HTML.
+ */
+export function useActiveKid() {
+  const mounted = useMounted();
+  const profiles = useLunchStore((s) => s.profiles);
+  const activeId = useLunchStore((s) => s.activeId);
+  const trays = useLunchStore((s) => s.trays);
+  const profile = mounted ? profiles.find((p) => p.id === activeId) ?? null : null;
+  const tray = profile ? trays[profile.id] : undefined;
+  return {
+    mounted,
+    profiles: mounted ? profiles : [],
+    profile,
+    picks: tray?.picks ?? emptyTraySelection(),
+    avoids: tray?.avoids ?? [],
+    filled: profile
+      ? Object.values(tray?.picks ?? {}).filter((p) => p !== null).length
+      : 0,
+  };
+}
+
+// Back-compat re-export for components migrated to useActiveKid.
+export const useTrayStore = useLunchStore;

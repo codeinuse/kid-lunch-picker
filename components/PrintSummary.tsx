@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { optionsFor, summarizeOptions } from "@/lib/options";
-import { emptyTraySelection, useMounted, useTrayStore } from "@/lib/store";
+import { useActiveKid } from "@/lib/store";
 
 /**
  * Paper-friendly lunch order. Hidden on screen (`hidden`), shown only
@@ -11,9 +11,7 @@ import { emptyTraySelection, useMounted, useTrayStore } from "@/lib/store";
  * so "Save as PDF" from the print dialog captures just this order.
  */
 export function PrintSummary() {
-  const mounted = useMounted();
-  const storePicks = useTrayStore((s) => s.picks);
-  const picks = mounted ? storePicks : emptyTraySelection();
+  const { profile, picks } = useActiveKid();
   // Date only exists after mount (Next 16 forbids new Date() at prerender).
   const [today, setToday] = useState("");
   useEffect(() => {
@@ -33,7 +31,7 @@ export function PrintSummary() {
       className="hidden print:block"
     >
       <h1 style={{ fontSize: 30, fontWeight: 600, fontFamily: "Fredoka, Nunito, sans-serif" }}>
-        🍱 My Lunch Order
+        🍱 {profile ? `${profile.name}'s Lunch Order` : "My Lunch Order"}
       </h1>
       <p style={{ fontSize: 16 }}>{today}</p>
       <hr />
