@@ -42,6 +42,19 @@ const ALLERGEN_KEYWORDS: Record<Allergen, string[]> = {
   sesame: ["sesame"],
 };
 
+/** HEAD-check an upstream photo; Spoonacular's `image` field often 404s. */
+async function imageWorks(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(5000),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /** Drop live items whose title mentions an avoided allergen. */
 function containsAvoidedAllergen(title: string, avoids: Allergen[]): boolean {
   const t = title.toLowerCase();
@@ -162,6 +175,14 @@ export async function GET(req: NextRequest) {
       });
       if (live.length >= 8) break;
     }
+    // Strip dead photo URLs so cards never show broken images
+    // (the emoji fallback renders instead). CDN checks, not API quota.
+    const checks = await Promise.all(
+      live.map((item) => (item.imageUrl ? imageWorks(item.imageUrl) : false)),
+    );
+    live.forEach((item, i) => {
+      if (item.imageUrl && !checks[i]) delete item.imageUrl;
+    });
     return NextResponse.json({ items: [...live, ...local], source: "mixed" });
   } catch {
     // API hiccup — never break the kid's flow, fall back to curated.
