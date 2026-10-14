@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { todayKey, useActiveKid } from "@/lib/store";
+import { useMemo } from "react";
+import { todayKey, useActiveKid, useMounted } from "@/lib/store";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
 
@@ -15,20 +15,21 @@ interface DayDot {
 export function StreakRow() {
   const { profile, packedDays, streak } = useActiveKid();
   // Week dates resolve post-mount (no new Date() during prerender).
-  const [week, setWeek] = useState<DayDot[] | null>(null);
-  useEffect(() => {
+  // Derived with useMemo — no setState-in-effect, and packedDays has a
+  // stable identity (see EMPTY_PACKED) so this never loops.
+  const mounted = useMounted();
+  const week: DayDot[] = useMemo(() => {
+    if (!mounted) return [];
     const now = new Date();
     const monday = new Date(now);
     monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-    setWeek(
-      Array.from({ length: 7 }, (_, i) => {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
-        const key = todayKey(d);
-        return { key, done: packedDays.includes(key), isToday: key === todayKey(now) };
-      }),
-    );
-  }, [packedDays]);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = todayKey(d);
+      return { key, done: packedDays.includes(key), isToday: key === todayKey(now) };
+    });
+  }, [mounted, packedDays]);
 
   if (!profile) return null;
 
@@ -38,7 +39,7 @@ export function StreakRow() {
         🔥 {streak}
       </span>
       <div className="flex gap-1.5">
-        {(week ?? []).map((d, i) => (
+        {week.map((d, i) => (
           <span
             key={d.key}
             title={`${DAY_LETTERS[i]}${d.isToday ? " (today)" : ""}`}

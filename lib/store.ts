@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type {
   Allergen,
   FoodCategory,
-  FoodItem,
   PickedFood,
   TraySelection,
 } from "./types";
@@ -91,6 +90,15 @@ const freshTray = (): TrayData => ({ picks: emptyTraySelection(), avoids: [] });
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+/**
+ * Shared empty defaults. Fresh `[]`/`{}` literals here would create a new
+ * identity on every render — any effect depending on them (e.g. StreakRow's
+ * week builder) would re-run forever, starving router transitions until
+ * taps silently die. These constants keep the identity stable.
+ */
+const EMPTY_PACKED: string[] = [];
+const EMPTY_TRIED: Record<string, string> = {};
 
 export const useLunchStore = create<LunchState>()(
   persist(
@@ -236,11 +244,13 @@ export const useLunchStore = create<LunchState>()(
  * is identical to the server HTML (no hydration mismatch).
  */
 export function useMounted() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-  return mounted;
+  // No setState-in-effect: server snapshot false, client snapshot true.
+  // Keeps the first client render identical to SSR HTML (no mismatch).
+  return useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 }
 
 /**
@@ -251,10 +261,9 @@ export function useActiveKid() {
   const mounted = useMounted();
   // "Today" is captured post-mount only: constructing dates during render
   // breaks prerendering (Next 16 flags new Date() in client components).
-  const [today, setToday] = useState<Date | null>(null);
-  useEffect(() => {
-    setToday(new Date());
-  }, []);
+  // Derived during render — no setState-in-effect. Only date strings and
+  // counts flow downstream, so the fresh Date identity is harmless.
+  const today = mounted ? new Date() : null;
   const profiles = useLunchStore((s) => s.profiles);
   const activeId = useLunchStore((s) => s.activeId);
   const trays = useLunchStore((s) => s.trays);
@@ -265,8 +274,10 @@ export function useActiveKid() {
   const triedAtMap = useLunchStore((s) => s.triedAt);
   const seenTourMap = useLunchStore((s) => s.seenTour);
   const stickersMap = useLunchStore((s) => s.stickers);
-  const packed = profile && mounted ? (packedDaysMap[profile.id] ?? []) : [];
-  const tried = profile && mounted ? (triedAtMap[profile.id] ?? {}) : {};
+  const packed =
+    profile && mounted ? (packedDaysMap[profile.id] ?? EMPTY_PACKED) : EMPTY_PACKED;
+  const tried =
+    profile && mounted ? (triedAtMap[profile.id] ?? EMPTY_TRIED) : EMPTY_TRIED;
   const slots = visibleCategories(profile?.age ?? null);
   const visibleIds = new Set(slots.map((c) => c.id));
   return {

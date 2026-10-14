@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { CATEGORIES } from "@/lib/categories";
 import { optionsFor, summarizeOptions } from "@/lib/options";
-import { useActiveKid } from "@/lib/store";
+import { useActiveKid, useMounted } from "@/lib/store";
 
 /**
  * Paper-friendly lunch order. Hidden on screen (`hidden`), shown only
@@ -13,16 +12,15 @@ import { useActiveKid } from "@/lib/store";
 export function PrintSummary() {
   const { profile, picks } = useActiveKid();
   // Date only exists after mount (Next 16 forbids new Date() at prerender).
-  const [today, setToday] = useState("");
-  useEffect(() => {
-    setToday(
-      new Date().toLocaleDateString(undefined, {
+  // Derived during render — no setState-in-effect.
+  const mounted = useMounted();
+  const today = mounted
+    ? new Date().toLocaleDateString(undefined, {
         weekday: "long",
         month: "long",
         day: "numeric",
-      }),
-    );
-  }, []);
+      })
+    : "";
 
   return (
     <section

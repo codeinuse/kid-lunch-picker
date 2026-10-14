@@ -9,7 +9,7 @@ import { useActiveKid } from "@/lib/store";
 export function TrayGrid() {
   const { picks, slots } = useActiveKid();
   return (
-    <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3" role="list">
+    <ul className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3">
       {slots.map((cat) => {
         const pick = picks[cat.id];
         const summary =
@@ -20,10 +20,9 @@ export function TrayGrid() {
               )
             : "";
         return (
+          <li key={cat.id} className="contents">
           <Link
-            key={cat.id}
             href={`/browse/${cat.id}`}
-            role="listitem"
             aria-label={
               pick?.item
                 ? `${cat.label}: ${pick.item.name}. Tap to change.`
@@ -50,8 +49,9 @@ export function TrayGrid() {
               <span className="text-sm font-bold text-stone-500">{summary}</span>
             )}
           </Link>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

@@ -26,13 +26,18 @@ interface Piece {
   round: boolean;
 }
 
+/** Deterministic PRNG so every celebration bursts the same way. */
+function makeRand(seed: number) {
+  let s = seed;
+  return () => {
+    s = (s * 1664525 + 1013904223) % 4294967296;
+    return s / 4294967296;
+  };
+}
+
 function usePieces(count: number): Piece[] {
   return useMemo(() => {
-    let seed = 20261013;
-    const rand = () => {
-      seed = (seed * 1664525 + 1013904223) % 4294967296;
-      return seed / 4294967296;
-    };
+    const rand = makeRand(20261013);
     return Array.from({ length: count }, (_, i) => {
       const cannon = i < 30;
       return {
