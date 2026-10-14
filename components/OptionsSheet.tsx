@@ -22,6 +22,17 @@ export function OptionsSheet({ item, onClose }: Props) {
   const setPick = useLunchStore((s) => s.setPick);
   const tap = useTapSound();
   const add = useAddSound();
+
+  // Every tweak lands on the tray instantly — closing the sheet can never
+  // lose the kid's choices. "Add to Tray" just confirms + heads home.
+  const choose = (groupId: string, choiceId: string, choiceLabel: string) => {
+    if (!item) return;
+    tap();
+    const next = { ...options, [groupId]: choiceId };
+    setOptions(next);
+    setPick(item.category, { item, options: next });
+    speak(choiceLabel);
+  };
   const [options, setOptions] = useState<Record<string, string>>({});
   const [imgOk, setImgOk] = useState(true);
 
@@ -90,11 +101,7 @@ export function OptionsSheet({ item, onClose }: Props) {
                         <button
                           key={choice.id}
                           type="button"
-                          onClick={() => {
-                            tap();
-                            setOptions((o) => ({ ...o, [group.id]: choice.id }));
-                            speak(choice.label);
-                          }}
+                          onClick={() => choose(group.id, choice.id, choice.label)}
                           aria-pressed={active}
                           className={`flex min-h-16 min-w-16 flex-col items-center justify-center rounded-2xl border-[3px] px-4 py-2 transition-all active:translate-y-0.5 ${
                             active

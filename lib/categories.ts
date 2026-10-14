@@ -12,7 +12,7 @@ export interface CategoryInfo {
 }
 
 export const CATEGORIES: CategoryInfo[] = [
-  { id: "main", label: "Main Dish", emoji: "🍽️", bg: "bg-red-100", accent: "ring-red-400" },
+  { id: "main", label: "Main Dish", emoji: "🍕", bg: "bg-red-100", accent: "ring-red-400" },
   { id: "side", label: "Side Dish", emoji: "🍟", bg: "bg-yellow-100", accent: "ring-yellow-400" },
   { id: "fruit", label: "Fruit", emoji: "🍎", bg: "bg-orange-100", accent: "ring-orange-400" },
   { id: "veggie", label: "Veggie", emoji: "🥕", bg: "bg-green-100", accent: "ring-green-500" },
