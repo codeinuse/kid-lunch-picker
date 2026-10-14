@@ -4,7 +4,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import type { FoodItem } from "@/lib/types";
-import { speak } from "@/lib/speak";
 import { useTapSound } from "@/lib/sounds";
 
 interface Props {
@@ -26,7 +25,7 @@ export function FoodCard({ item, selected, onPick }: Props) {
       onClick={() => {
         tap();
         onPick(item);
-        speak(item.name);
+        // The options sheet speaks the name on open — no double talk.
       }}
       aria-pressed={selected}
       aria-label={`Pick ${item.name}`}

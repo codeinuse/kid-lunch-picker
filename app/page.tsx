@@ -4,8 +4,11 @@ import { AllergenBar } from "@/components/AllergenBar";
 import { PrintSummary } from "@/components/PrintSummary";
 import { AuthGate } from "@/components/AuthGate";
 import { ProfileChip } from "@/components/ProfileChip";
+import Link from "next/link";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { HomeHeaderText } from "@/components/HomeHeaderText";
+import { StreakRow } from "@/components/StreakRow";
+import { ChallengeCard } from "@/components/ChallengeCard";
 
 export default function Home() {
   return (
@@ -16,6 +19,14 @@ export default function Home() {
       <ThemeSwitcher />
 
       <Celebration />
+      <StreakRow />
+      <ChallengeCard />
+      <Link
+        href="/lab"
+        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-[3px] border-dashed border-stone-400 font-display text-xl font-semibold text-stone-600 active:scale-95"
+      >
+        🔬 Snack Lab — just for fun!
+      </Link>
       <TrayGrid />
 
       <div className="my-1 w-full border-t-2 border-dashed border-stone-200" />

@@ -1,11 +1,23 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { GuideMascot } from "@/components/Mascot";
 import { useActiveKid } from "@/lib/store";
+import { speak } from "@/lib/speak";
+import { greeting } from "@/lib/guide-lines";
 
 /** Home header: theme guide + title + themed tagline. */
 export function HomeHeaderText() {
-  const { themeId, theme } = useActiveKid();
+  const { themeId, theme, profile } = useActiveKid();
+  const greeted = useRef<string | null>(null);
+
+  // The guide greets the kid by name, once per sign-in.
+  useEffect(() => {
+    if (profile && greeted.current !== profile.id) {
+      greeted.current = profile.id;
+      speak(greeting(profile.name, themeId));
+    }
+  }, [profile, themeId]);
   return (
     <header className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
       <GuideMascot kind={themeId} className="h-24 w-auto shrink-0 sm:h-28" />

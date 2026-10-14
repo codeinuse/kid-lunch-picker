@@ -7,9 +7,12 @@ import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useActiveKid, useLunchStore } from "@/lib/store";
+import { useEffect } from "react";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
 import { PointerMascot } from "@/components/Mascot";
+import { speak } from "@/lib/speak";
+import { browsePrompt } from "@/lib/guide-lines";
 
 async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]> {
   const res = await fetch(
@@ -22,8 +25,14 @@ async function fetchFoods(category: string, exclude: string): Promise<FoodItem[]
 
 export function BrowseGrid({ category }: { category: FoodCategory }) {
   const info = categoryInfo(category);
-  const { mounted, avoids, picks } = useActiveKid();
+  const { mounted, avoids, picks, profile } = useActiveKid();
   const setPick = useLunchStore((s) => s.setPick);
+
+  // The guide narrates each step, using the kid's name.
+  useEffect(() => {
+    speak(browsePrompt(profile?.name ?? "friend", category));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category]);
 
   /**
    * Tap = added immediately with default options, sheet opens for tweaks.

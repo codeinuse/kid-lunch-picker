@@ -10,7 +10,7 @@ import type {
   PickedFood,
   TraySelection,
 } from "./types";
-import { CATEGORIES } from "./categories";
+import { CATEGORIES, visibleCategories } from "./categories";
 import { THEMES, themePack, type ThemeId } from "./themes";
 
 export interface KidProfile {
@@ -20,6 +20,8 @@ export interface KidProfile {
   /** 4-digit device PIN (kept on this device only). */
   pin: string;
   theme: ThemeId;
+  /** Age in years (10 = 10+); null when unknown. Drives slot count. */
+  age: number | null;
 }
 
 export interface TrayData {
@@ -27,15 +29,49 @@ export interface TrayData {
   avoids: Allergen[];
 }
 
+export interface VoiceSettings {
+  voiceOn: boolean;
+  voiceRate: number;
+}
+
+/** ISO dates (yyyy-mm-dd) the tray was completed, per profile. */
+export type PackedDays = Record<string, string[]>;
+
+/** First-picked date per food, per profile — powers explorer badges. */
+export type TriedAt = Record<string, Record<string, string>>;
+
+export function todayKey(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Consecutive-day streak ending `today` (yesterday counts as alive). */
+export function streakCount(days: string[], today: Date): number {
+  const set = new Set(days);
+  let streak = 0;
+  const cursor = new Date(today);
+  if (!set.has(todayKey(cursor))) cursor.setDate(cursor.getDate() - 1);
+  while (set.has(todayKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 interface LunchState {
   profiles: KidProfile[];
   activeId: string | null;
   trays: Record<string, TrayData>;
+  settings: VoiceSettings;
+  packedDays: PackedDays;
+  triedAt: TriedAt;
   totalSlots: number;
-  createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId) => string;
+  createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId, age?: number | null) => string;
   selectProfile: (id: string) => void;
   logout: () => void;
   setTheme: (theme: ThemeId) => void;
+  setVoiceOn: (on: boolean) => void;
+  setVoiceRate: (rate: number) => void;
+  recordPackedDay: () => void;
   setPick: (category: FoodCategory, pick: PickedFood | null) => void;
   toggleAvoid: (allergen: Allergen) => void;
   clearTray: () => void;
@@ -56,11 +92,14 @@ export const useLunchStore = create<LunchState>()(
       profiles: [],
       activeId: null,
       trays: {},
+      settings: { voiceOn: true, voiceRate: 0.9 },
+      packedDays: {} as PackedDays,
+      triedAt: {} as TriedAt,
       totalSlots: CATEGORIES.length,
-      createProfile: (name, avatar, pin, theme = "classic") => {
+      createProfile: (name, avatar, pin, theme = "classic", age = null) => {
         const id = newId();
         set((s) => ({
-          profiles: [...s.profiles, { id, name, avatar, pin, theme }],
+          profiles: [...s.profiles, { id, name, avatar, pin, theme, age }],
           trays: { ...s.trays, [id]: freshTray() },
           activeId: id,
         }));
@@ -68,6 +107,20 @@ export const useLunchStore = create<LunchState>()(
       },
       selectProfile: (id) => set({ activeId: id }),
       logout: () => set({ activeId: null }),
+      setVoiceOn: (on) =>
+        set((s) => ({ settings: { ...s.settings, voiceOn: on } })),
+      setVoiceRate: (rate) =>
+        set((s) => ({ settings: { ...s.settings, voiceRate: rate } })),
+      recordPackedDay: () =>
+        set((s) => {
+          if (!s.activeId) return s;
+          const key = todayKey();
+          const days = s.packedDays[s.activeId] ?? [];
+          if (days.includes(key)) return s;
+          return {
+            packedDays: { ...s.packedDays, [s.activeId]: [...days, key] },
+          };
+        }),
       setTheme: (theme) =>
         set((s) => {
           if (!s.activeId) return s;
@@ -81,6 +134,8 @@ export const useLunchStore = create<LunchState>()(
         set((s) => {
           if (!s.activeId) return s;
           const tray = s.trays[s.activeId] ?? freshTray();
+          const tried = s.triedAt[s.activeId] ?? {};
+          const key = todayKey();
           return {
             trays: {
               ...s.trays,
@@ -88,6 +143,13 @@ export const useLunchStore = create<LunchState>()(
                 ...tray,
                 picks: { ...tray.picks, [category]: pick },
               },
+            },
+            triedAt: {
+              ...s.triedAt,
+              [s.activeId]:
+                pick && !tried[pick.item.id]
+                  ? { ...tried, [pick.item.id]: key }
+                  : tried,
             },
           };
         }),
@@ -116,21 +178,28 @@ export const useLunchStore = create<LunchState>()(
     }),
     {
       name: "lunch-tray",
-      version: 3,
-      // v3 adds per-profile themes; older profiles get the classic look.
+      version: 6,
+      // v6 adds ages + first-tried dates; everything else carries over.
       migrate: (persisted: unknown) => {
         const state = persisted as {
-          profiles?: (Omit<KidProfile, "theme"> & { theme?: ThemeId })[];
+          profiles?: (Omit<KidProfile, "theme" | "age"> & { theme?: ThemeId; age?: number | null })[];
           activeId?: string | null;
           trays?: Record<string, TrayData>;
+          settings?: VoiceSettings;
+          packedDays?: PackedDays;
+          triedAt?: TriedAt;
         };
         return {
           profiles: (state.profiles ?? []).map((p) => ({
             ...p,
             theme: (p.theme && THEMES[p.theme] ? p.theme : "classic") as ThemeId,
+            age: p.age ?? null,
           })),
           activeId: state.activeId ?? null,
           trays: state.trays ?? {},
+          settings: state.settings ?? { voiceOn: true, voiceRate: 0.9 },
+          packedDays: state.packedDays ?? {},
+          triedAt: state.triedAt ?? {},
         };
       },
     },
@@ -156,22 +225,42 @@ export function useMounted() {
  */
 export function useActiveKid() {
   const mounted = useMounted();
+  // "Today" is captured post-mount only: constructing dates during render
+  // breaks prerendering (Next 16 flags new Date() in client components).
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => {
+    setToday(new Date());
+  }, []);
   const profiles = useLunchStore((s) => s.profiles);
   const activeId = useLunchStore((s) => s.activeId);
   const trays = useLunchStore((s) => s.trays);
   const profile = mounted ? profiles.find((p) => p.id === activeId) ?? null : null;
   const tray = profile ? trays[profile.id] : undefined;
   const themeId = profile?.theme ?? "classic";
+  const packedDaysMap = useLunchStore((s) => s.packedDays);
+  const triedAtMap = useLunchStore((s) => s.triedAt);
+  const packed = profile && mounted ? (packedDaysMap[profile.id] ?? []) : [];
+  const tried = profile && mounted ? (triedAtMap[profile.id] ?? {}) : {};
+  const slots = visibleCategories(profile?.age ?? null);
+  const visibleIds = new Set(slots.map((c) => c.id));
   return {
     mounted,
     profiles: mounted ? profiles : [],
     profile,
     themeId,
     theme: themePack(mounted ? themeId : "classic"),
+    packedDays: packed,
+    todayKey: today ? todayKey(today) : null,
+    streak: today ? streakCount(packed, today) : 0,
+    tried,
+    slots,
+    total: slots.length,
     picks: tray?.picks ?? emptyTraySelection(),
     avoids: tray?.avoids ?? [],
     filled: profile
-      ? Object.values(tray?.picks ?? {}).filter((p) => p !== null).length
+      ? Object.entries(tray?.picks ?? {})
+          .filter(([cat, p]) => p !== null && visibleIds.has(cat as FoodCategory))
+          .length
       : 0,
   };
 }

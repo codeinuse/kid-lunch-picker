@@ -22,3 +22,16 @@ export const CATEGORIES: CategoryInfo[] = [
 
 export const categoryInfo = (id: FoodCategory): CategoryInfo =>
   CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[0];
+
+/**
+ * Tray slots by age (Synthesis-style adaptive difficulty).
+ * Under-7s get 4 big slots; 7+ (or unknown age) get all 6.
+ */
+export function visibleCategories(age: number | null): CategoryInfo[] {
+  if (age !== null && age < 7) {
+    return CATEGORIES.filter((c) =>
+      ["main", "side", "fruit", "drink"].includes(c.id),
+    );
+  }
+  return CATEGORIES;
+}

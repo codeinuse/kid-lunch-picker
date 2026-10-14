@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CATEGORIES } from "@/lib/categories";
 import { optionsFor, summarizeOptions } from "@/lib/options";
 import { useActiveKid } from "@/lib/store";
 
-/** The lunch tray: 6 slots, one per category. Tap a slot to browse it. */
+/** The lunch tray: one slot per visible category (4 for under-7s). */
 export function TrayGrid() {
-  const { picks } = useActiveKid();
+  const { picks, slots } = useActiveKid();
   return (
     <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3" role="list">
-      {CATEGORIES.map((cat) => {
+      {slots.map((cat) => {
         const pick = picks[cat.id];
         const summary =
           pick && pick.item

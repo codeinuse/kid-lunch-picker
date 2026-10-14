@@ -120,6 +120,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
   const [name, setName] = useState("");
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [themeChoice, setThemeChoice] = useState<ThemeId>("classic");
+  const [age, setAge] = useState<number | null>(null);
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [started, setStarted] = useState(false);
@@ -153,7 +154,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
       setPin(next);
       if (next.length === PIN_LENGTH) {
         if (next === firstPin) {
-          const id = createProfile(name.trim().slice(0, 16), avatar, next, themeChoice);
+          const id = createProfile(name.trim().slice(0, 16), avatar, next, themeChoice, age);
           speak(`Welcome, ${name.trim().slice(0, 16)}!`);
           onDone();
           void id;
@@ -212,6 +213,27 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
               </button>
             );
           })}
+        </div>
+        <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
+          How old are you?
+        </p>
+        <div className="mb-4 grid grid-cols-6 gap-2">
+          {[5, 6, 7, 8, 9, 10].map((a) => (
+            <button
+              key={a}
+              type="button"
+              onClick={() => setAge(a)}
+              aria-pressed={age === a}
+              aria-label={a === 10 ? "10 or older" : `${a} years old`}
+              className={`min-h-14 rounded-2xl border-[3px] font-display text-xl font-semibold transition-all active:scale-95 ${
+                age === a
+                  ? "border-stone-900 bg-orange-100 shadow-[0_3px_0_#1c1917]"
+                  : "border-stone-200 bg-white text-stone-600"
+              }`}
+            >
+              {a === 10 ? "10+" : a}
+            </button>
+          ))}
         </div>
         <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
           Pick your animal

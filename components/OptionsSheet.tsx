@@ -8,6 +8,7 @@ import type { FoodItem } from "@/lib/types";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { speak } from "@/lib/speak";
+import { addedLine } from "@/lib/guide-lines";
 import { useAddSound, useTapSound } from "@/lib/sounds";
 
 interface Props {
@@ -119,7 +120,7 @@ export function OptionsSheet({ item, onClose }: Props) {
                 onClick={() => {
                   add();
                   setPick(item.category, { item, options });
-                  speak(`${item.name} added!`);
+                  speak(addedLine(item.name, item.id));
                   onClose();
                   router.push("/");
                 }}
