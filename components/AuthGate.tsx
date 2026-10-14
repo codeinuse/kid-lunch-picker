@@ -14,8 +14,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (!mounted) {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-5 px-4 py-6">
-        <p className="py-16 text-center text-6xl" aria-label="Loading" aria-hidden>
+        <p className="py-16 text-center text-6xl" aria-hidden>
           🍱
+        </p>
+        <p role="status" className="sr-only">
+          Getting your tray ready…
         </p>
       </main>
     );

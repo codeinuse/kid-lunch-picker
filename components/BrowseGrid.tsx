@@ -7,7 +7,6 @@ import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useActiveKid, useLunchStore } from "@/lib/store";
-import { useEffect } from "react";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
 import { PointerMascot } from "@/components/Mascot";
@@ -28,11 +27,9 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
   const { mounted, avoids, picks, profile } = useActiveKid();
   const setPick = useLunchStore((s) => s.setPick);
 
-  // The guide narrates each step, using the kid's name.
-  useEffect(() => {
-    speak(browsePrompt(profile?.name ?? "friend", category));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category]);
+  // No auto-talk on mount (autoplay surprise): the guide speaks on taps,
+  // and the kid can replay the prompt with the speaker button.
+  const replayPrompt = () => speak(browsePrompt(profile?.name ?? "friend", category));
 
   /**
    * Tap = added immediately with default options, sheet opens for tweaks.
@@ -66,7 +63,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
         >
           ←
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="font-display text-3xl font-semibold text-stone-800">
             {info.emoji} Pick a {info.label}!
           </h1>
@@ -74,12 +71,32 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
             Tap the yummiest one 😋
           </p>
         </div>
+        <button
+          type="button"
+          onClick={replayPrompt}
+          aria-label="Hear the guide's hint"
+          className="sticker-sm flex min-h-16 min-w-16 shrink-0 items-center justify-center text-3xl active:translate-y-0.5 active:shadow-none"
+        >
+          🔊
+        </button>
       </div>
 
       {isLoading && (
-        <p className="py-16 text-center text-6xl" aria-label="Loading" aria-hidden>
-          🍳
-        </p>
+        <div className="grid w-full grid-cols-2 gap-3" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="sticker flex min-h-36 flex-col items-center justify-center gap-2 p-4"
+              aria-hidden
+            >
+              <div className="h-24 w-24 animate-pulse rounded-2xl bg-stone-100" />
+              <div className="h-5 w-2/3 animate-pulse rounded-full bg-stone-100" />
+            </div>
+          ))}
+          <p role="status" className="sr-only">
+            Loading yummy foods…
+          </p>
+        </div>
       )}
       {isError && (
         <div className="rounded-3xl bg-red-50 p-6 text-center ring-2 ring-red-200">

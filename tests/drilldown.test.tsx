@@ -62,7 +62,14 @@ function renderBrowse() {
 
 beforeEach(() => {
   localStorage.clear();
-  useLunchStore.setState({ profiles: [], activeId: null, trays: {}, triedAt: {} });
+  useLunchStore.setState({
+    profiles: [],
+    activeId: null,
+    trays: {},
+    triedAt: {},
+    seenTour: {},
+    stickers: {},
+  });
   useLunchStore.getState().createProfile("Sam", "🦊", "1234");
   stubFetch();
 });

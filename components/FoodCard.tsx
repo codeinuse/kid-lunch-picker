@@ -30,7 +30,7 @@ export function FoodCard({ item, selected, onPick }: Props) {
       aria-pressed={selected}
       aria-label={`Pick ${item.name}`}
       className={`sticker flex min-h-36 min-w-36 flex-col items-center justify-center gap-1 p-4 transition-colors ${
-        selected ? "bg-green-100" : ""
+        selected ? "bg-green-100 ring-4 ring-green-700" : ""
       }`}
     >
       {showPhoto ? (
@@ -50,7 +50,11 @@ export function FoodCard({ item, selected, onPick }: Props) {
         </span>
       )}
       <span className="font-display text-xl font-medium text-stone-800">{item.name}</span>
-      {selected && <span className="text-3xl" aria-hidden>✅</span>}
+      {selected && (
+        <span className="rounded-full bg-green-700 px-3 py-0.5 text-base font-extrabold text-white">
+          <span aria-hidden>✅ </span>Picked!
+        </span>
+      )}
     </motion.button>
   );
 }

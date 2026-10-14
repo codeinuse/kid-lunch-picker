@@ -41,7 +41,7 @@ export function AllergenBar() {
                 toggleAvoid(a.id);
               }}
               aria-pressed={active}
-              className={`min-h-11 rounded-full border-2 px-3 py-2 text-sm font-bold transition-all active:translate-y-0.5 ${
+              className={`min-h-12 rounded-full border-2 px-3 py-2 text-sm font-bold transition-all active:translate-y-0.5 ${
                 active
                   ? "border-stone-900 bg-red-600 text-white shadow-[0_3px_0_#1c1917] active:shadow-none"
                   : "border-stone-300 bg-white text-stone-600 shadow-sm"
@@ -61,7 +61,7 @@ export function AllergenBar() {
           }}
           aria-pressed={settings.voiceOn}
           aria-label="Guide voice on or off"
-          className={`min-h-11 rounded-full border-2 px-4 py-2 text-sm font-bold transition-all active:translate-y-0.5 ${
+          className={`min-h-12 rounded-full border-2 px-4 py-2 text-sm font-bold transition-all active:translate-y-0.5 ${
             settings.voiceOn
               ? "border-stone-900 bg-green-700 text-white shadow-[0_3px_0_#1c1917] active:shadow-none"
               : "border-stone-300 bg-white text-stone-500 shadow-sm"
@@ -69,7 +69,7 @@ export function AllergenBar() {
         >
           {settings.voiceOn ? "🔊 Voice on" : "🔇 Voice off"}
         </button>
-        <label className="flex min-h-11 items-center gap-2 rounded-full border-2 border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-600">
+        <label className="flex min-h-12 items-center gap-2 rounded-full border-2 border-stone-300 bg-white px-4 py-2 text-sm font-bold text-stone-600">
           <span aria-hidden>🐢</span>
           <input
             type="range"

@@ -10,6 +10,13 @@ import { CATEGORIES, visibleCategories } from "@/lib/categories";
 import { defaultOptions, optionsFor, summarizeOptions } from "@/lib/options";
 import { foodFact } from "@/lib/food-facts";
 import { addedLine, browsePrompt, greeting } from "@/lib/guide-lines";
+import {
+  STICKERS,
+  levelFor,
+  nextLevel,
+  stickerById,
+  stickerForPackedCount,
+} from "@/lib/stickers";
 
 function freshKid() {
   useLunchStore.setState({
@@ -18,6 +25,8 @@ function freshKid() {
     trays: {},
     packedDays: {},
     triedAt: {},
+    seenTour: {},
+    stickers: {},
   });
   return useLunchStore.getState().createProfile("Sam", "🦊", "1234");
 }
@@ -125,6 +134,42 @@ describe("age-aware slots", () => {
 
   it("empty tray covers every category", () => {
     expect(Object.keys(emptyTraySelection())).toHaveLength(CATEGORIES.length);
+  });
+});
+
+describe("onboarding tour", () => {
+  it("marks the tour seen for the active kid only", () => {
+    const s = useLunchStore.getState();
+    const sam = s.activeId!;
+    const ana = s.createProfile("Ana", "🐼", "9999");
+    useLunchStore.getState().markTourSeen();
+    expect(useLunchStore.getState().seenTour[ana]).toBe(true);
+    expect(useLunchStore.getState().seenTour[sam]).toBeUndefined();
+  });
+});
+
+describe("sticker rewards", () => {
+  it("awards each sticker once per kid", () => {
+    const s = useLunchStore.getState();
+    s.awardSticker("pizza-party");
+    s.awardSticker("pizza-party");
+    expect(useLunchStore.getState().stickers[s.activeId!]).toEqual(["pizza-party"]);
+  });
+
+  it("rotates stickers by packed-day count and resolves ids", () => {
+    expect(stickerForPackedCount(1).id).toBe(STICKERS[0].id);
+    expect(stickerForPackedCount(STICKERS.length + 1).id).toBe(STICKERS[0].id);
+    expect(stickerById("pizza-party")?.name).toBe("Pizza Party");
+    expect(stickerById("nope")).toBeUndefined();
+  });
+
+  it("levels up at 0/3/7/14 packed days", () => {
+    expect(levelFor(0).id).toBe("sprout");
+    expect(levelFor(3).id).toBe("helper");
+    expect(levelFor(7).id).toBe("star");
+    expect(levelFor(30).id).toBe("champion");
+    expect(nextLevel(0)?.id).toBe("helper");
+    expect(nextLevel(30)).toBeNull();
   });
 });
 

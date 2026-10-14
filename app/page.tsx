@@ -9,10 +9,13 @@ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { HomeHeaderText } from "@/components/HomeHeaderText";
 import { StreakRow } from "@/components/StreakRow";
 import { ChallengeCard } from "@/components/ChallengeCard";
+import { OnboardingTour } from "@/components/OnboardingTour";
+import { StickerCollection } from "@/components/StickerCollection";
 
 export default function Home() {
   return (
     <AuthGate>
+    <OnboardingTour />
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-5 px-4 py-6">
       <ProfileChip />
       <HomeHeaderText />
@@ -21,6 +24,7 @@ export default function Home() {
       <Celebration />
       <StreakRow />
       <ChallengeCard />
+      <StickerCollection />
       <Link
         href="/lab"
         className="flex min-h-14 w-full items-center justify-center gap-2 rounded-full border-[3px] border-dashed border-stone-400 font-display text-xl font-semibold text-stone-600 active:scale-95"

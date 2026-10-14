@@ -35,25 +35,31 @@ export function OptionsSheet({ item, onClose }: Props) {
   };
   const [options, setOptions] = useState<Record<string, string>>({});
   const [imgOk, setImgOk] = useState(true);
+  const [lastId, setLastId] = useState<string | null>(null);
 
   const groups = item ? optionsFor(item.id, item.category) : [];
 
   const { picks } = useActiveKid();
   const existing = item ? picks[item.category] : null;
 
+  // Sync sheet state when a (different) item opens — during render, not in
+  // an effect. Starts from the live tray pick so reopening never wipes
+  // the kid's tweaks.
+  if ((item?.id ?? null) !== lastId) {
+    setLastId(item?.id ?? null);
+    setOptions(
+      item && existing?.item.id === item.id && existing.options
+        ? existing.options
+        : item
+          ? defaultOptions(optionsFor(item.id, item.category))
+          : {},
+    );
+    setImgOk(true);
+  }
+
+  // The guide names the food on open — external system, so an effect.
   useEffect(() => {
-    if (item) {
-      // Start from the current pick (just added with defaults) so
-      // reopening the sheet never wipes the kid's tweaks.
-      setOptions(
-        existing?.item.id === item.id && existing.options
-          ? existing.options
-          : defaultOptions(optionsFor(item.id, item.category)),
-      );
-      setImgOk(true);
-      speak(item.name);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (item) speak(item.name);
   }, [item]);
 
   return (
@@ -61,9 +67,11 @@ export function OptionsSheet({ item, onClose }: Props) {
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/40" />
         <Dialog.Content
-          aria-describedby={undefined}
           className="fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-orange-50 p-5 pb-8 shadow-2xl"
         >
+          <Dialog.Description className="sr-only">
+            Pick options for {item?.name}, then add it to your tray.
+          </Dialog.Description>
           {item && (
             <div className="flex flex-col items-center gap-4">
               <div
@@ -80,6 +88,7 @@ export function OptionsSheet({ item, onClose }: Props) {
                   alt={item.name}
                   width={192}
                   height={192}
+                  priority
                   className="h-48 w-48 rounded-3xl object-cover shadow"
                   onError={() => setImgOk(false)}
                 />

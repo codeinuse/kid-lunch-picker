@@ -64,6 +64,10 @@ interface LunchState {
   settings: VoiceSettings;
   packedDays: PackedDays;
   triedAt: TriedAt;
+  /** Tour seen once per profile — first-run coachmarks. */
+  seenTour: Record<string, boolean>;
+  /** Earned sticker ids per profile — the rewards collection. */
+  stickers: Record<string, string[]>;
   totalSlots: number;
   createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId, age?: number | null) => string;
   selectProfile: (id: string) => void;
@@ -75,6 +79,8 @@ interface LunchState {
   setPick: (category: FoodCategory, pick: PickedFood | null) => void;
   toggleAvoid: (allergen: Allergen) => void;
   clearTray: () => void;
+  markTourSeen: () => void;
+  awardSticker: (id: string) => void;
 }
 
 export const emptyTraySelection = (): TraySelection =>
@@ -95,6 +101,8 @@ export const useLunchStore = create<LunchState>()(
       settings: { voiceOn: true, voiceRate: 0.9 },
       packedDays: {} as PackedDays,
       triedAt: {} as TriedAt,
+      seenTour: {},
+      stickers: {},
       totalSlots: CATEGORIES.length,
       createProfile: (name, avatar, pin, theme = "classic", age = null) => {
         const id = newId();
@@ -175,11 +183,23 @@ export const useLunchStore = create<LunchState>()(
             },
           };
         }),
+      markTourSeen: () =>
+        set((s) => {
+          if (!s.activeId) return s;
+          return { seenTour: { ...s.seenTour, [s.activeId]: true } };
+        }),
+      awardSticker: (id) =>
+        set((s) => {
+          if (!s.activeId) return s;
+          const earned = s.stickers[s.activeId] ?? [];
+          if (earned.includes(id)) return s;
+          return { stickers: { ...s.stickers, [s.activeId]: [...earned, id] } };
+        }),
     }),
     {
       name: "lunch-tray",
-      version: 6,
-      // v6 adds ages + first-tried dates; everything else carries over.
+      version: 7,
+      // v6 adds ages + first-tried dates; v7 adds tour flags + stickers.
       migrate: (persisted: unknown) => {
         const state = persisted as {
           profiles?: (Omit<KidProfile, "theme" | "age"> & { theme?: ThemeId; age?: number | null })[];
@@ -188,6 +208,8 @@ export const useLunchStore = create<LunchState>()(
           settings?: VoiceSettings;
           packedDays?: PackedDays;
           triedAt?: TriedAt;
+          seenTour?: Record<string, boolean>;
+          stickers?: Record<string, string[]>;
         };
         return {
           profiles: (state.profiles ?? []).map((p) => ({
@@ -200,6 +222,8 @@ export const useLunchStore = create<LunchState>()(
           settings: state.settings ?? { voiceOn: true, voiceRate: 0.9 },
           packedDays: state.packedDays ?? {},
           triedAt: state.triedAt ?? {},
+          seenTour: state.seenTour ?? {},
+          stickers: state.stickers ?? {},
         };
       },
     },
@@ -239,6 +263,8 @@ export function useActiveKid() {
   const themeId = profile?.theme ?? "classic";
   const packedDaysMap = useLunchStore((s) => s.packedDays);
   const triedAtMap = useLunchStore((s) => s.triedAt);
+  const seenTourMap = useLunchStore((s) => s.seenTour);
+  const stickersMap = useLunchStore((s) => s.stickers);
   const packed = profile && mounted ? (packedDaysMap[profile.id] ?? []) : [];
   const tried = profile && mounted ? (triedAtMap[profile.id] ?? {}) : {};
   const slots = visibleCategories(profile?.age ?? null);
@@ -253,6 +279,8 @@ export function useActiveKid() {
     todayKey: today ? todayKey(today) : null,
     streak: today ? streakCount(packed, today) : 0,
     tried,
+    seenTour: profile && mounted ? (seenTourMap[profile.id] ?? false) : false,
+    stickers: profile && mounted ? (stickersMap[profile.id] ?? []) : [],
     slots,
     total: slots.length,
     picks: tray?.picks ?? emptyTraySelection(),
