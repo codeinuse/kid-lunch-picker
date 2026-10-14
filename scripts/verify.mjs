@@ -173,20 +173,25 @@ dead.length === 0
       "photos download",
       `${dead.length} dead: ` + dead.map((r) => `${r.item.c}/${r.item.name}`).join(", "),
     );
-// Placeholder art is byte-identical under different URLs — shared bytes = fake.
+// Placeholder art is byte-identical under different URLs AND tiny.
+// A real photo reused across variants (e.g. generic juice pic) is fine.
 const fpCount = new Map();
+const fpSize = new Map();
 for (const r of photoResults) {
   if (!r.buf) continue;
   const fp = md5(r.buf);
   r.fp = fp;
   fpCount.set(fp, (fpCount.get(fp) ?? 0) + 1);
+  fpSize.set(fp, r.buf.length);
 }
-const placeholders = photoResults.filter((r) => r.fp && fpCount.get(r.fp) > 1);
+const placeholders = photoResults.filter(
+  (r) => r.fp && fpCount.get(r.fp) > 1 && fpSize.get(r.fp) < 10240,
+);
 placeholders.length === 0
   ? ok("no placeholder art served")
   : bad(
       "no placeholder art",
-      `${placeholders.length} share bytes: ` +
+      `${placeholders.length} share tiny bytes: ` +
         placeholders.map((r) => `${r.item.c}/${r.item.name}`).join(", "),
     );
 
