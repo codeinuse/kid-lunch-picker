@@ -9,7 +9,8 @@ import { foodFact } from "@/lib/food-facts";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
-import { PointerMascot } from "@/components/Mascot";
+import { SausageMascot } from "@/components/SausageMascot";
+import { Card } from "@/components/Card";
 import { speak } from "@/lib/speak";
 import { addedLine } from "@/lib/guide-lines";
 import { useAddSound } from "@/lib/sounds";
@@ -43,6 +44,7 @@ export default function LabPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-4 px-4 py-6">
+      <Card label="Snack Lab">
       <div className="flex w-full items-center gap-3">
         <Link
           href="/"
@@ -60,6 +62,7 @@ export default function LabPage() {
           </p>
         </div>
       </div>
+      </Card>
 
       {current ? (
         <div className="sticker flex w-full flex-col gap-3 p-4" aria-live="polite">
@@ -88,7 +91,7 @@ export default function LabPage() {
         </div>
       ) : (
         <div className="flex w-full items-center justify-center gap-2 rounded-3xl bg-white/70 p-3">
-          <PointerMascot className="h-16 w-auto" />
+          <SausageMascot emotion="snack" className="h-16 w-auto" />
           <p className="font-display text-xl font-medium text-stone-600">
             What shall we discover?
           </p>

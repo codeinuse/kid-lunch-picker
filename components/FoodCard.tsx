@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import type { FoodItem } from "@/lib/types";
 import { useTapSound } from "@/lib/sounds";
+import { FoodArt, foodArtSrc } from "@/components/FoodArt";
 
 interface Props {
   item: FoodItem;
@@ -18,6 +19,24 @@ export function FoodCard({ item, selected, onPick }: Props) {
   const [imgOk, setImgOk] = useState(true);
   const showPhoto = item.imageUrl && imgOk;
   const tap = useTapSound();
+  // Curated IconScout art first (consistent + offline), then the live
+  // photo, then emoji. The emoji stays for live API items without art.
+  const photoOrEmoji = showPhoto ? (
+    <Image
+      src={item.imageUrl!}
+      alt={item.name}
+      width={96}
+      height={96}
+      sizes="96px"
+      className="h-24 w-24 rounded-2xl object-cover"
+      loading="lazy"
+      onError={() => setImgOk(false)}
+    />
+  ) : (
+    <span className="text-7xl" role="img" aria-hidden>
+      {item.emoji}
+    </span>
+  );
   return (
     <motion.button
       type="button"
@@ -33,21 +52,10 @@ export function FoodCard({ item, selected, onPick }: Props) {
         selected ? "bg-green-100 ring-4 ring-green-700" : ""
       }`}
     >
-      {showPhoto ? (
-        <Image
-          src={item.imageUrl!}
-          alt={item.name}
-          width={96}
-          height={96}
-          sizes="96px"
-          className="h-24 w-24 rounded-2xl object-cover"
-          loading="lazy"
-          onError={() => setImgOk(false)}
-        />
+      {foodArtSrc(item) ? (
+        <FoodArt item={item} fallback={photoOrEmoji} />
       ) : (
-        <span className="text-7xl" role="img" aria-hidden>
-          {item.emoji}
-        </span>
+        photoOrEmoji
       )}
       <span className="font-display text-xl font-medium text-stone-800">{item.name}</span>
       {selected && (

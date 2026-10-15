@@ -3,6 +3,7 @@
 import type { Allergen } from "@/lib/types";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { useTapSound } from "@/lib/sounds";
+import { Card } from "@/components/Card";
 
 const BIG9: { id: Allergen; label: string; emoji: string }[] = [
   { id: "milk", label: "Milk", emoji: "🥛" },
@@ -25,10 +26,7 @@ export function AllergenBar() {
   const setVoiceRate = useLunchStore((s) => s.setVoiceRate);
   const tap = useTapSound();
   return (
-    <section aria-label="Grown-ups settings" className="w-full">
-      <p className="mb-2 text-center text-sm font-bold text-stone-500">
-        👩‍👧 Grown-ups: tap foods to hide
-      </p>
+    <Card icon="👩‍👧" title="Grown-ups" subtitle="Tap foods to hide them from the kid">
       <div className="flex flex-wrap justify-center gap-2">
         {BIG9.map((a) => {
           const active = avoids.includes(a.id);
@@ -84,6 +82,6 @@ export function AllergenBar() {
           <span aria-hidden>🐇</span>
         </label>
       </div>
-    </section>
+    </Card>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useActiveKid, useLunchStore, type KidProfile } from "@/lib/store";
 import { THEME_ORDER, themePack, type ThemeId } from "@/lib/themes";
+import type { Gender } from "@/lib/nutrition";
 import { speak } from "@/lib/speak";
 import { useTapSound } from "@/lib/sounds";
 import { GreeterMascot, PointerMascot } from "@/components/Mascot";
@@ -121,6 +123,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
   const [avatar, setAvatar] = useState(AVATARS[0]);
   const [themeChoice, setThemeChoice] = useState<ThemeId>("classic");
   const [age, setAge] = useState<number | null>(null);
+  const [gender, setGender] = useState<Gender | null>(null);
   const [pin, setPin] = useState("");
   const [confirm, setConfirm] = useState(false);
   const [started, setStarted] = useState(false);
@@ -154,7 +157,7 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
       setPin(next);
       if (next.length === PIN_LENGTH) {
         if (next === firstPin) {
-          const id = createProfile(name.trim().slice(0, 16), avatar, next, themeChoice, age);
+          const id = createProfile(name.trim().slice(0, 16), avatar, next, themeChoice, age, gender);
           speak(`Welcome, ${name.trim().slice(0, 16)}!`);
           onDone();
           void id;
@@ -236,6 +239,36 @@ function CreateProfile({ onDone, onBack }: { onDone: () => void; onBack: () => v
           ))}
         </div>
         <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
+          I am a…
+        </p>
+        <div className="mb-4 grid grid-cols-3 gap-2" role="group" aria-label="Pick boy, girl, or skip">
+          {(
+            [
+              { id: "boy", label: "Boy", emoji: "💙" },
+              { id: "girl", label: "Girl", emoji: "💜" },
+              { id: null, label: "Skip", emoji: "🤫" },
+            ] as { id: Gender | null; label: string; emoji: string }[]
+          ).map((g) => (
+            <button
+              key={g.label}
+              type="button"
+              onClick={() => setGender(g.id)}
+              aria-pressed={gender === g.id}
+              aria-label={g.id === null ? "Skip this question" : `I am a ${g.label.toLowerCase()}`}
+              className={`flex min-h-14 flex-col items-center justify-center rounded-2xl border-[3px] transition-all active:scale-95 ${
+                gender === g.id
+                  ? "border-stone-900 bg-sky-100 shadow-[0_3px_0_#1c1917]"
+                  : "border-stone-200 bg-white text-stone-600"
+              }`}
+            >
+              <span className="text-2xl" aria-hidden>
+                {g.emoji}
+              </span>
+              <span className="text-sm font-extrabold">{g.label}</span>
+            </button>
+          ))}
+        </div>
+        <p className="mb-2 text-center font-display text-xl font-semibold text-stone-700">
           Pick your animal
         </p>
         <div className="grid grid-cols-4 gap-2">
@@ -301,6 +334,19 @@ export function LoginScreen() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-5 px-4 py-6">
+      {/* Cover: Food Craving animation (IconScout, Prosymbols) — GIF plays
+          everywhere with no extra player; JSON staged in public/lottie/. */}
+      <figure className="sticker w-full overflow-hidden p-2">
+        <Image
+          src="/lottie/cover-food-craving.gif"
+          alt="Hungry kid dreaming of yummy lunch foods"
+          width={640}
+          height={360}
+          sizes="(max-width: 672px) 100vw, 672px"
+          priority
+          className="h-auto w-full rounded-2xl"
+        />
+      </figure>
       <header className="flex w-full flex-wrap items-center justify-center gap-x-3 gap-y-1 text-center">
         <GreeterMascot className="h-24 w-auto shrink-0 sm:h-28" />
         <div className="min-w-0">

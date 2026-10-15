@@ -1,8 +1,10 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { THEME_ORDER, themePack, type ThemeId } from "@/lib/themes";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { useTapSound } from "@/lib/sounds";
+import { ThemeIcon } from "@/components/ThemeIcon";
 
 /** Big emoji buttons to swap the kid's world theme. */
 export function ThemeSwitcher() {
@@ -19,9 +21,10 @@ export function ThemeSwitcher() {
         const t = themePack(id);
         const active = themeId === id;
         return (
-          <button
+          <motion.button
             key={id}
             type="button"
+            whileTap={{ scale: 0.9 }}
             onClick={() => pick(id)}
             aria-pressed={active}
             aria-label={`${t.name} theme`}
@@ -32,11 +35,18 @@ export function ThemeSwitcher() {
                 : "border-transparent bg-white/60"
             }`}
           >
-            <span className="text-2xl" aria-hidden>
-              {t.emoji}
-            </span>
+            <motion.span
+              className="flex items-center gap-1 text-2xl"
+              aria-hidden
+              initial={false}
+              animate={active ? { scale: [1, 1.35, 1], rotate: [0, -10, 0] } : { scale: 1 }}
+              transition={{ duration: 0.45 }}
+            >
+              <ThemeIcon theme={id} />
+              <span aria-hidden>{t.emoji}</span>
+            </motion.span>
             <span className="text-[11px] font-extrabold text-stone-600">{t.name}</span>
-          </button>
+          </motion.button>
         );
       })}
     </div>

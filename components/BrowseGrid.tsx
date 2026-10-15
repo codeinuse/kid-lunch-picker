@@ -2,14 +2,16 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FoodCategory, FoodItem } from "@/lib/types";
 import { categoryInfo } from "@/lib/categories";
 import { defaultOptions, optionsFor } from "@/lib/options";
 import { useActiveKid, useLunchStore } from "@/lib/store";
 import { FoodCard } from "@/components/FoodCard";
 import { OptionsSheet } from "@/components/OptionsSheet";
-import { PointerMascot } from "@/components/Mascot";
+import { SausageMascot } from "@/components/SausageMascot";
+import { Card } from "@/components/Card";
+import { uniqueArtItems } from "@/components/FoodArt";
 import { speak } from "@/lib/speak";
 import { browsePrompt } from "@/lib/guide-lines";
 
@@ -53,8 +55,13 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
     queryFn: () => fetchFoods(category, avoids.join(",")),
   });
 
+  // One card per icon (curated first): live feeds repeat the same names
+  // and would otherwise show walls of identical art.
+  const shown = useMemo(() => uniqueArtItems(data ?? []), [data]);
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center gap-4 px-4 py-6">
+      <Card label={`Pick a ${info.label}`}>
       <div className="flex w-full items-center gap-3">
         <Link
           href="/"
@@ -80,6 +87,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
           🔊
         </button>
       </div>
+      </Card>
 
       {isLoading && (
         <div className="grid w-full grid-cols-2 gap-3" aria-busy="true">
@@ -100,7 +108,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
       )}
       {isError && (
         <div className="rounded-3xl bg-red-50 p-6 text-center ring-2 ring-red-200">
-          <p className="text-4xl" aria-hidden>😢</p>
+          <SausageMascot emotion="sad" className="mx-auto h-28 w-auto" />
           <p className="mt-2 text-xl font-extrabold text-stone-700">
             Oh no! The foods hid.
           </p>
@@ -115,16 +123,16 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
 
       {data && data.length === 0 && (
         <div className="sticker p-6 text-center">
-          <PointerMascot className="mx-auto h-28 w-auto" />
+          <SausageMascot emotion="point" className="mx-auto h-28 w-auto" />
           <p className="mt-2 font-display text-2xl font-medium text-stone-700">
             No foods here right now!
           </p>
         </div>
       )}
 
-      {data && data.length > 0 && (
+      {shown.length > 0 && (
         <div className="grid w-full grid-cols-2 gap-3">
-          {data.map((item) => (
+          {shown.map((item) => (
             <FoodCard
               key={item.id}
               item={item}
@@ -135,7 +143,7 @@ export function BrowseGrid({ category }: { category: FoodCategory }) {
         </div>
       )}
 
-      {data && data.length > 0 && (
+      {shown.length > 0 && (
         <Link
           href="/"
           className="mt-2 flex min-h-16 w-full items-center justify-center rounded-full border-[3px] border-stone-900 bg-green-700 font-display text-2xl font-semibold text-white shadow-[0_5px_0_#1c1917] active:translate-y-1 active:shadow-none"

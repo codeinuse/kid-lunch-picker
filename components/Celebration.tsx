@@ -5,7 +5,7 @@ import { todayKey, useActiveKid, useLunchStore } from "@/lib/store";
 import { ConfettiExplosion } from "@/components/ConfettiExplosion";
 import { speak } from "@/lib/speak";
 import { useFanfareSound, useTapSound } from "@/lib/sounds";
-import { CheererMascot, GuideMascot } from "@/components/Mascot";
+import { SausageMascot } from "@/components/SausageMascot";
 import { stickerForPackedCount } from "@/lib/stickers";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -20,7 +20,7 @@ function weekAgoKey(today: string | null): string | null {
 
 /** Progress bar + celebration when the tray is complete. */
 export function Celebration() {
-  const { filled, total, themeId, theme, picks, tried, packedDays, todayKey: today } = useActiveKid();
+  const { filled, total, theme, picks, tried, packedDays, todayKey: today } = useActiveKid();
   // Explorer badge: a current pick first-tasted recently, on a return tray.
   // Derived from the post-mount today key (no new Date() during prerender,
   // no setState-in-effect).
@@ -104,13 +104,9 @@ export function Celebration() {
           className="sticker relative mt-2 overflow-hidden p-4 text-center"
         >
           <ConfettiExplosion />
-          {themeId === "classic" ? (
-            <CheererMascot className="relative mx-auto h-36 w-auto" />
-          ) : (
-            <GuideMascot kind={themeId} className="relative mx-auto h-36 w-auto" />
-          )}
+          <SausageMascot emotion="cheer" className="relative mx-auto h-36 w-auto" />
           <p className="relative mt-1 font-display text-2xl font-semibold text-stone-800">
-            {themeId === "classic" ? "Leo loves your lunch!" : `${theme.name} crew loves your lunch!`}
+            Sizzle loves your lunch!
           </p>
           {isExplorer && (
             <p className="relative mt-1 inline-block rounded-full bg-purple-600 px-4 py-1 font-display text-lg font-semibold text-white">

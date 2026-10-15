@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "iconscout": {
+      "type": "remote",
+      "url": "https://mcp.iconscout.com/mcp",
+      "enabled": true
+    }
+  }
+}

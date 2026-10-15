@@ -9,6 +9,7 @@ import type {
   PickedFood,
   TraySelection,
 } from "./types";
+import type { Gender } from "./nutrition";
 import { CATEGORIES, visibleCategories } from "./categories";
 import { THEMES, themePack, type ThemeId } from "./themes";
 
@@ -21,6 +22,8 @@ export interface KidProfile {
   theme: ThemeId;
   /** Age in years (10 = 10+); null when unknown. Drives slot count. */
   age: number | null;
+  /** Optional — tunes Lunch Power targets; null uses the average. */
+  gender: Gender | null;
 }
 
 export interface TrayData {
@@ -68,10 +71,11 @@ interface LunchState {
   /** Earned sticker ids per profile — the rewards collection. */
   stickers: Record<string, string[]>;
   totalSlots: number;
-  createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId, age?: number | null) => string;
+  createProfile: (name: string, avatar: string, pin: string, theme?: ThemeId, age?: number | null, gender?: Gender | null) => string;
   selectProfile: (id: string) => void;
   logout: () => void;
   setTheme: (theme: ThemeId) => void;
+  setGender: (gender: Gender | null) => void;
   setVoiceOn: (on: boolean) => void;
   setVoiceRate: (rate: number) => void;
   recordPackedDay: () => void;
@@ -112,10 +116,10 @@ export const useLunchStore = create<LunchState>()(
       seenTour: {},
       stickers: {},
       totalSlots: CATEGORIES.length,
-      createProfile: (name, avatar, pin, theme = "classic", age = null) => {
+      createProfile: (name, avatar, pin, theme = "classic", age = null, gender = null) => {
         const id = newId();
         set((s) => ({
-          profiles: [...s.profiles, { id, name, avatar, pin, theme, age }],
+          profiles: [...s.profiles, { id, name, avatar, pin, theme, age, gender }],
           trays: { ...s.trays, [id]: freshTray() },
           activeId: id,
         }));
@@ -143,6 +147,15 @@ export const useLunchStore = create<LunchState>()(
           return {
             profiles: s.profiles.map((p) =>
               p.id === s.activeId ? { ...p, theme } : p,
+            ),
+          };
+        }),
+      setGender: (gender) =>
+        set((s) => {
+          if (!s.activeId) return s;
+          return {
+            profiles: s.profiles.map((p) =>
+              p.id === s.activeId ? { ...p, gender } : p,
             ),
           };
         }),
@@ -206,11 +219,12 @@ export const useLunchStore = create<LunchState>()(
     }),
     {
       name: "lunch-tray",
-      version: 7,
-      // v6 adds ages + first-tried dates; v7 adds tour flags + stickers.
+      version: 8,
+      // v6 adds ages + first-tried dates; v7 adds tour flags + stickers;
+      // v8 adds gender for Lunch Power targets.
       migrate: (persisted: unknown) => {
         const state = persisted as {
-          profiles?: (Omit<KidProfile, "theme" | "age"> & { theme?: ThemeId; age?: number | null })[];
+          profiles?: (Omit<KidProfile, "theme" | "age" | "gender"> & { theme?: ThemeId; age?: number | null; gender?: Gender | null })[];
           activeId?: string | null;
           trays?: Record<string, TrayData>;
           settings?: VoiceSettings;
@@ -224,6 +238,7 @@ export const useLunchStore = create<LunchState>()(
             ...p,
             theme: (p.theme && THEMES[p.theme] ? p.theme : "classic") as ThemeId,
             age: p.age ?? null,
+            gender: p.gender ?? null,
           })),
           activeId: state.activeId ?? null,
           trays: state.trays ?? {},

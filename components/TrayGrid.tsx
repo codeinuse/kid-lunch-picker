@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { optionsFor, summarizeOptions } from "@/lib/options";
 import { useActiveKid } from "@/lib/store";
+import { FoodArt, foodArtSrc } from "@/components/FoodArt";
 
 /** The lunch tray: one slot per visible category (4 for under-7s). */
 export function TrayGrid() {
@@ -37,7 +38,11 @@ export function TrayGrid() {
               className="text-6xl"
               aria-hidden
             >
-              {pick?.item ? pick.item.emoji : cat.emoji}
+              {pick?.item && foodArtSrc(pick.item) ? (
+                <FoodArt item={pick.item} size={72} className="h-[72px] w-[72px] object-contain" fallback={pick.item.emoji} />
+              ) : (
+                (pick?.item ? pick.item.emoji : cat.emoji)
+              )}
             </motion.span>
             <span className="text-base font-extrabold text-stone-700">
               {cat.label}
